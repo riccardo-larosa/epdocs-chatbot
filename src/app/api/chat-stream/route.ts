@@ -37,29 +37,34 @@ export async function POST(request: Request) {
         console.log(`role: ${msg.role}, content: ${msg.content}`)
     ));
     
-    const context = await findRelevantContent(latestMessage);
+    // const context = await findRelevantContent(latestMessage);
 
-    const assistantPrompt = `You are a helpful assistant. 
-        Answer the following question based on the context:
-        ${context}
-        `;
+    // const assistantPrompt = `You are a helpful assistant. 
+    //     Answer the following question based on the context:
+    //     ${context}
+    //     `;
+    const assistantPrompt = `You are a helpful assistant. Check your knowledge base before answering any questions.
+    Only respond to questions using information from tool calls.
+    if no relevant information is found in the tool calls, respond, "Sorry, I don't know."`;
 
     const result = await streamText({
         model: openai('gpt-4o'),
         messages: [
-            { role: "assistant", content: assistantPrompt },
-            { role: "user", content: `.. ${latestMessage}` }
+            { role: "system", content: assistantPrompt },
+            { role: "user", content: `.. ${latestMessage}` },
+            ...messages
         ],
-        // experimental_toolCallStreaming: true,
-        // tools: {
-        //     getContent: tool({
-        //         description: 'get content from your knowledge base',
-        //         parameters: z.object({
-        //             latestMessage: z.string().describe('the users question'),
-        //         }),
-        //         execute: async ({ latestMessage }) => findRelevantContent(latestMessage),
-        //     })
-        // }
+        //experimental_toolCallStreaming: true,
+        maxSteps: 3,
+        tools: {
+            getContent: tool({
+                description: 'get content from your knowledge base',
+                parameters: z.object({
+                    latestMessage: z.string().describe('the users question'),
+                }),
+                execute: async ({ latestMessage }) => findRelevantContent(latestMessage),
+            })
+        }
     });
 
     return result.toDataStreamResponse();

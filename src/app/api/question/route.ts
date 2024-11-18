@@ -31,7 +31,6 @@ export async function POST(request: Request) {
     const input = `Context: ${context}\n\nQuestion: ${prompt}`;
     
     // Create a stream
-    //const llmStream = await agent.answerQuestion(input);
     const result = await streamText({
       model: openai('gpt-4o'),
       messages: [{ role: 'user', content: input }],
@@ -39,13 +38,7 @@ export async function POST(request: Request) {
 
     return result.toDataStreamResponse();
 
-    // return new Response(llmStream, {
-    //   headers: {
-    //     'Content-Type': 'text/event-stream',
-    //     'Cache-Control': 'no-cache',
-    //     'Connection': 'keep-alive',
-    //   }
-    // });
+
   } catch (error) {
     console.error('Error in question route:', error);
     return NextResponse.json(
