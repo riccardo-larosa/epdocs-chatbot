@@ -1,31 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { streamText, tool } from 'ai';
 import { openai } from '@ai-sdk/openai';
-import { MongoDBRetrieverAgent } from '@/lib/mongoDbRetrieverAgent';
+import { findRelevantContent } from '@/lib/mongoDbRetriever';
 import { z } from 'zod';
 
-const findRelevantContent = async (question: string) => {
-    const config = {
-        mongodbUri: process.env.MONGODB_CONNECTION_URI!,
-        dbName: process.env.MONGODB_DATABASE_NAME!,
-        collectionName: process.env.MONGODB_COLLECTION_NAME!,
-        openaiApiKey: process.env.OPENAI_API_KEY!,
-        topK: 3,
-        indexName: "vector_index",
-    };
+// const findRelevantContent = async (question: string) => {
+//     const config = {
+//         mongodbUri: process.env.MONGODB_CONNECTION_URI!,
+//         dbName: process.env.MONGODB_DATABASE_NAME!,
+//         collectionName: process.env.MONGODB_COLLECTION_NAME!,
+//         openaiApiKey: process.env.OPENAI_API_KEY!,
+//         topK: 3,
+//         indexName: "vector_index",
+//     };
 
-    const agent = new MongoDBRetrieverAgent(config);
-    await agent.init(config);
+//     const agent = new MongoDBRetriever();
+//     await agent.init(config);
 
-    // Get relevant documents
-    console.log(`question: ${question}`);
-    const results = await agent.retrieveRelevantDocuments(question);
-    const context = results.map(doc => doc.pageContent).join('\n\n');
-    // log the first 100 characters of the context
-    console.log(`context: ${context.slice(0, 100)}`);
-    return context;
+//     // Get relevant documents
+//     console.log(`question: ${question}`);
+//     const results = await agent.similaritySearch(question);
+//     const context = results.map(doc => doc.pageContent).join('\n\n');
+//     // log the first 100 characters of the context
+//     console.log(`context: ${context.slice(0, 100)}`);
+//     return context;
 
-}
+// }
 
 export async function POST(request: Request) {
 

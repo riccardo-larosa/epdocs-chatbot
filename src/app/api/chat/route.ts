@@ -1,7 +1,7 @@
 import { ChatOpenAI } from '@langchain/openai';
 import { streamText } from 'ai';
 import { openai } from '@ai-sdk/openai';
-import { MongoDBRetrieverAgent } from '@/lib/mongoDbRetrieverAgent';
+import { findRelevantContent } from '@/lib/mongoDbRetriever';
 
 export async function POST(req: Request) {
     try {
@@ -9,21 +9,22 @@ export async function POST(req: Request) {
         const question = messages[messages.length - 1].content;
         console.log(`question: ${question}`);
 
-        const config = {
-            mongodbUri: process.env.MONGODB_CONNECTION_URI!,
-            dbName: process.env.MONGODB_DATABASE_NAME!,
-            collectionName: process.env.MONGODB_COLLECTION_NAME!,
-            openaiApiKey: process.env.OPENAI_API_KEY!,
-            topK: 3,
-            indexName: "vector_index",
-        };
+        // const config = {
+        //     mongodbUri: process.env.MONGODB_CONNECTION_URI!,
+        //     dbName: process.env.MONGODB_DATABASE_NAME!,
+        //     collectionName: process.env.MONGODB_COLLECTION_NAME!,
+        //     openaiApiKey: process.env.OPENAI_API_KEY!,
+        //     topK: 3,
+        //     indexName: "vector_index",
+        // };
 
-        const agent = new MongoDBRetrieverAgent(config);
-        await agent.init(config);
+        // const agent = new MongoDBRetriever();
+        // await agent.init(config);
 
-        // Get relevant documents
-        const results = await agent.retrieveRelevantDocuments(question);
-        const context = results.map(doc => doc.pageContent).join('\n\n');
+        // // Get relevant documents
+        // const results = await agent.similaritySearch(question);
+        // const context = results.map(doc => doc.pageContent).join('\n\n');
+        const context = await findRelevantContent(question);
         console.log(`context: ${context}`);
 
         const systemPrompt = 

@@ -1,5 +1,5 @@
 // app/first/page.tsx
-import QuestionForm from '@/app/components/QuestionForm';
+import QuestionForm from '@/app/test/components/QuestionForm';
 import { Suspense } from 'react';
 
 export default function Home() {

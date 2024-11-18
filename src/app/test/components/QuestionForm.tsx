@@ -4,7 +4,7 @@ import { useCompletion } from 'ai/react';
 
 export default function YourComponent() {
   const { completion, input, handleInputChange, handleSubmit, isLoading, error } = useCompletion({
-    api: '/api/question',
+    api: '/test/api/question',
     onError: (error) => {
       console.error('Error:', error);
     },

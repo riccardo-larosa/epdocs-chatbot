@@ -21,7 +21,7 @@ export default function TestMongoDBPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/test-mongodb');
+      const response = await fetch('/test/api/test-mongodb');
       const data = await response.json();
       
       if (!response.ok) throw new Error(data.error || 'Failed to test connection');
