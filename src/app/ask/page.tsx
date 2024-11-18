@@ -8,8 +8,9 @@ import NavBar from '../components/navbar';
 
 export default function Home() {
   const [waitingForAI, setWaitingForAI] = useState<Boolean>(false);
-  const { messages, input, handleInputChange, handleSubmit } = useChat();
-
+  const { messages, input, handleInputChange, handleSubmit } = useChat({
+    api: '/api/chat',
+  });
 
   return (
     <div>

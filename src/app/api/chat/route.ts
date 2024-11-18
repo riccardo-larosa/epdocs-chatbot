@@ -1,82 +1,54 @@
-import { Message } from 'ai';
-import { LangChainAdapter } from 'ai';
 import { ChatOpenAI } from '@langchain/openai';
-
-import { createRetrievalChain } from "langchain/chains/retrieval";
-import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
-import { ChatPromptTemplate, HumanMessagePromptTemplate } from "@langchain/core/prompts";
-import { vectorStore } from '@/utils/openai';
-import { NextResponse } from 'next/server';
-import { SystemMessagePromptTemplate } from "@langchain/core/prompts";
-//import { BufferMemory } from "langchain/memory";
-
+import { streamText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { MongoDBRetrieverAgent } from '@/lib/mongoDbRetrieverAgent';
 
 export async function POST(req: Request) {
     try {
-        const body = await req.json();
-        const messages: Message[] = body.messages ?? [];
-        console.log(`messages: ${messages}`);
+        const { messages } = await req.json();
         const question = messages[messages.length - 1].content;
         console.log(`question: ${question}`);
 
-        const retriever = vectorStore().asRetriever({
-            "searchType": "mmr",
-            "searchKwargs": { "fetchK": 10, "lambda": 0.25 }
-        });
+        const config = {
+            mongodbUri: process.env.MONGODB_CONNECTION_URI!,
+            dbName: process.env.MONGODB_DATABASE_NAME!,
+            collectionName: process.env.MONGODB_COLLECTION_NAME!,
+            openaiApiKey: process.env.OPENAI_API_KEY!,
+            topK: 3,
+            indexName: "vector_index",
+        };
 
-        const results = await retriever.invoke(question);
-        console.log(`results: ${results}`);
-        //convert the documents to a string
+        const agent = new MongoDBRetrieverAgent(config);
+        await agent.init(config);
+
+        // Get relevant documents
+        const results = await agent.retrieveRelevantDocuments(question);
         const context = results.map(doc => doc.pageContent).join('\n\n');
         console.log(`context: ${context}`);
-        
-        const contextObject = results.map(doc => ({ 
-            source: doc.metadata.source, 
-            id: doc.metadata.id, 
-         }));
-        console.log(`contextObject: ${contextObject}`);
 
-        
-        const promptTemplate = ChatPromptTemplate.fromMessages([
-            SystemMessagePromptTemplate.fromTemplate(
+        const systemPrompt = 
                 `Answer the following question based on the context:
 
-                Question: {question}
-                Context: {context}
+                Question: ${question}
+                Context: ${context}
 
-                Answer the question in a helpful and comprehensive way.`
-            )
-        ]);
+                Answer the question in a helpful and comprehensive way.`;
 
-        const formattedPrompt = await promptTemplate.formatMessages({
-            context: context, // use the context string we created earlier
-            question: question
-        });
-
-        // const prompt = ChatPromptTemplate.fromTemplate(formattedPrompt);
-        console.log(`formattedPrompt: ${formattedPrompt}`);
-
+        console.log(`systemPrompt: ${systemPrompt}`);
         const model = new ChatOpenAI({
             temperature: 0.8,
             streaming: true,
         });
 
-        const eventStream = await model.streamEvents(
-            formattedPrompt,
-            {
-                version: "v2",
-                encoding: "text/event-stream",
-            },
-        );
-
-        return new Response(eventStream, {
-            headers: {
-                "content-type": "text/event-stream",
-            },
+        const result = await streamText({
+            model: openai('gpt-4o'),
+            messages: [{ role: 'system', content: systemPrompt }, ...messages],
         });
+
+        return result.toDataStreamResponse();
     }
     catch (e: any) {
         console.log(`Error: ${e.message}`);
-        return NextResponse.json({ message: 'Error Processing' + e.message }, { status: 500 });
+        return Response.json({ message: 'Error Processing' + e.message }, { status: 500 });
     }
 }

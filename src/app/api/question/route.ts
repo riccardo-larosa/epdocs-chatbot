@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
 import { MongoDBRetrieverAgent } from '@/lib/mongoDbRetrieverAgent';
-import { OpenAIStream, streamText } from 'ai';
+import { streamText } from 'ai';
+//import { OpenAIStream, StreamingTextResponse } from "ai";
+import { openai } from '@ai-sdk/openai';
 
 export async function POST(request: Request) {
   try {
+    // note: because we are using useCompletion instead of useChat, 
+    // we are not using the messages array in the request body
+    // just the prompt
     const { prompt } = await request.json();
     
     const config = {
@@ -26,15 +31,21 @@ export async function POST(request: Request) {
     const input = `Context: ${context}\n\nQuestion: ${prompt}`;
     
     // Create a stream
-    const llmStream = await agent.answerQuestion(input);
-
-    return new Response(llmStream, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-      }
+    //const llmStream = await agent.answerQuestion(input);
+    const result = await streamText({
+      model: openai('gpt-4o'),
+      messages: [{ role: 'user', content: input }],
     });
+
+    return result.toDataStreamResponse();
+
+    // return new Response(llmStream, {
+    //   headers: {
+    //     'Content-Type': 'text/event-stream',
+    //     'Cache-Control': 'no-cache',
+    //     'Connection': 'keep-alive',
+    //   }
+    // });
   } catch (error) {
     console.error('Error in question route:', error);
     return NextResponse.json(

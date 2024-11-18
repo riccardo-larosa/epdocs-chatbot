@@ -45,7 +45,7 @@ export async function POST(request: Request) {
         `;
 
     const result = await streamText({
-        model: openai('gpt-4-turbo'),
+        model: openai('gpt-4o'),
         messages: [
             { role: "assistant", content: assistantPrompt },
             { role: "user", content: `.. ${latestMessage}` }
