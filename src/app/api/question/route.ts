@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { MongoDBRetrieverAgent } from '@/lib/mongoDbRetrieverAgent';
+import { OpenAIStream, streamText } from 'ai';
 
 export async function POST(request: Request) {
   try {
-    const { question } = await request.json();
+    const { prompt } = await request.json();
     
     const config = {
       mongodbUri: process.env.MONGODB_CONNECTION_URI!,
@@ -14,38 +15,26 @@ export async function POST(request: Request) {
       indexName: "vector_index",
     };
 
-    const encoder = new TextEncoder();
-    const stream = new TransformStream();
-    const writer = stream.writable.getWriter();
+    const agent = new MongoDBRetrieverAgent(config);
+    await agent.init(config);
+    
+    // Get relevant documents
+    const results = await agent.retrieveRelevantDocuments(prompt);
+    const context = results.map(doc => doc.pageContent).join('\n\n');
+    
+    // Create prompt with context
+    const input = `Context: ${context}\n\nQuestion: ${prompt}`;
+    
+    // Create a stream
+    const llmStream = await agent.answerQuestion(input);
 
-    // Start streaming response
-    const response = new Response(stream.readable, {
+    return new Response(llmStream, {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
-      },
+      }
     });
-
-    // Process in background
-    console.log('Creating agent...');
-    const agent = new MongoDBRetrieverAgent(config);
-    console.log('Initializing agent...');
-    await agent.init(config);
-    
-    console.log('Starting to process question...');
-    try {
-      await agent.answerQuestion(question, async (chunk: string) => {
-        console.log('Writing chunk:', chunk);
-        await writer.write(encoder.encode(`data: ${chunk}\n\n`));
-      });
-      console.log('Finished processing question');
-    } finally {
-      await writer.close();
-      await agent.close();
-    }
-
-    return response;
   } catch (error) {
     console.error('Error in question route:', error);
     return NextResponse.json(

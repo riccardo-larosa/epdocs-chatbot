@@ -19,11 +19,6 @@ export async function POST(req: Request) {
         const question = messages[messages.length - 1].content;
         console.log(`question: ${question}`);
 
-        const model = new ChatOpenAI({
-            temperature: 0.8,
-            streaming: true,
-        });
-
         const retriever = vectorStore().asRetriever({
             "searchType": "mmr",
             "searchKwargs": { "fetchK": 10, "lambda": 0.25 }
@@ -31,40 +26,54 @@ export async function POST(req: Request) {
 
         const results = await retriever.invoke(question);
         console.log(`results: ${results}`);
+        //convert the documents to a string
+        const context = results.map(doc => doc.pageContent).join('\n\n');
+        console.log(`context: ${context}`);
+        
+        const contextObject = results.map(doc => ({ 
+            source: doc.metadata.source, 
+            id: doc.metadata.id, 
+         }));
+        console.log(`contextObject: ${contextObject}`);
 
-        const promptTemplate = `Answer the following 
-            question based on the context:
+        
+        const promptTemplate = ChatPromptTemplate.fromMessages([
+            SystemMessagePromptTemplate.fromTemplate(
+                `Answer the following question based on the context:
 
-            Question: {question}
-            Context: {context}
+                Question: {question}
+                Context: {context}
 
-            Answer the question in a helpful and comprehensive way.`;
-        const message = SystemMessagePromptTemplate.fromTemplate("{text}");
-        const chatPrompt = ChatPromptTemplate.fromMessages([
-            new SystemMessagePromptTemplate(promptTemplate)
+                Answer the question in a helpful and comprehensive way.`
+            )
         ]);
-        const formattedPrompt = await chatPrompt.format({
-            context: results,
+
+        const formattedPrompt = await promptTemplate.formatMessages({
+            context: context, // use the context string we created earlier
             question: question
         });
 
         // const prompt = ChatPromptTemplate.fromTemplate(formattedPrompt);
+        console.log(`formattedPrompt: ${formattedPrompt}`);
 
-        const documentChain = await createStuffDocumentsChain({
-            llm: model,
-            prompt: chatPrompt,
+        const model = new ChatOpenAI({
+            temperature: 0.8,
+            streaming: true,
         });
 
-        const retrievalChain = await createRetrievalChain({
-            retriever,
-            combineDocsChain: documentChain,
-        });
+        const eventStream = await model.streamEvents(
+            formattedPrompt,
+            {
+                version: "v2",
+                encoding: "text/event-stream",
+            },
+        );
 
-        const response = await retrievalChain.stream({
-            input: question
+        return new Response(eventStream, {
+            headers: {
+                "content-type": "text/event-stream",
+            },
         });
-
-        return LangChainAdapter.toDataStreamResponse(response);
     }
     catch (e: any) {
         console.log(`Error: ${e.message}`);
