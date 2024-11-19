@@ -47,6 +47,7 @@ export async function findRelevantContent(question: string) {
     const context = results.map(doc => doc.pageContent).join('\n\n');
     // log the first 100 characters of the context
     console.log(`context: ${context.slice(0, 100)}`);
-    return context;
+    //return context;
+    return results;
 
 }

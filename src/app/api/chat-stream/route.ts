@@ -43,28 +43,40 @@ export async function POST(request: Request) {
     //     Answer the following question based on the context:
     //     ${context}
     //     `;
-    const assistantPrompt = `You are a helpful assistant. Check your knowledge base before answering any questions.
-    Only respond to questions using information from tool calls.
-    if no relevant information is found in the tool calls, respond, "Sorry, I don't know."`;
+    const assistantPrompt = `You are knowledgeable about Elastic Path products. You can answer any questions about 
+        Commerce Manager, 
+        Product Experience Manager also known as PXM,
+        Cart and Checkout,
+        Promotions,
+        Composer,
+        Payments
+        Subscriptions,
+        Studio.
+        Check Elastic Path knowledge base before answering any questions.
+        Only respond to questions using information from tool calls.
+        if no relevant information is found in the tool calls, respond, "Sorry, I don't know."
+        From the documents returned, after you have answered the question, provide a list of links to the documents that are most relevant to the question.`;
 
     const result = await streamText({
         model: openai('gpt-4o'),
         messages: [
-            { role: "system", content: assistantPrompt },
-            { role: "user", content: `.. ${latestMessage}` },
+            { role: "assistant", content: assistantPrompt },
+            //{ role: "user", content: `.. ${latestMessage}` }, // this is already in the messages array
             ...messages
         ],
         //experimental_toolCallStreaming: true,
         maxSteps: 3,
         tools: {
             getContent: tool({
-                description: 'get content from your knowledge base',
+                description: 'get content from Elastic Path knowledge base',
                 parameters: z.object({
                     latestMessage: z.string().describe('the users question'),
                 }),
                 execute: async ({ latestMessage }) => findRelevantContent(latestMessage),
             })
-        }
+        },
+        // maxToolRoundtrips: 3,
+        //toolChoice: 'required',
     });
 
     return result.toDataStreamResponse();

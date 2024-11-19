@@ -36,10 +36,10 @@ export async function POST(req: Request) {
                 Answer the question in a helpful and comprehensive way.`;
 
         console.log(`systemPrompt: ${systemPrompt}`);
-        const model = new ChatOpenAI({
-            temperature: 0.8,
-            streaming: true,
-        });
+        // const model = new ChatOpenAI({
+        //     temperature: 0.8,
+        //     streaming: true,
+        // });
 
         const result = await streamText({
             model: openai('gpt-4o'),
