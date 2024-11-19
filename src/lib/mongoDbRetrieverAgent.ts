@@ -5,7 +5,7 @@ import {
   import { 
     AgentExecutor, 
     createOpenAIToolsAgent,
-    type AgentStep 
+    //type AgentStep 
   } from 'langchain/agents';
   import { MongoDBAtlasVectorSearch } from '@langchain/mongodb';
   import { 
@@ -14,9 +14,9 @@ import {
   } from '@langchain/core/prompts';
   import { Tool, DynamicTool } from '@langchain/core/tools';
   import { MongoClient } from 'mongodb';
-  import { RunnableSequence } from '@langchain/core/runnables';
-  import { AgentConfig, QueryResponse } from '../types/agent';
-  import { OpenAIStream } from 'ai';
+  //import { RunnableSequence } from '@langchain/core/runnables';
+  import { AgentConfig } from '../types/agent';
+  //import { OpenAIStream } from 'ai';
   import { AIMessageChunk } from '@langchain/core/messages';
   import { concat } from '@langchain/core/utils/stream';
   
@@ -129,13 +129,13 @@ Use the search results to provide accurate, informed responses.`],
       return await this.vectorStore.similaritySearch(query, this.topK);
     }
   
-    async answerQuestion(question: string, onProgress?: (chunk: string) => Promise<void>) {
+    async answerQuestion(question: string) {
       if (!this.client || !this.client.connect) {
         throw new Error('MongoDB client is not connected. Please call init() first.');
       }
       
       try {
-        let accumulatedResponse = '';
+        //let accumulatedResponse = '';
         const response = await this.agent.stream(
           { input: question },
         //   {

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+// import { NextRequest, NextResponse } from 'next/server';
 import { streamText, tool } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { findRelevantContent } from '@/lib/mongoDbRetriever';
@@ -55,16 +55,21 @@ export async function POST(request: Request) {
         Check Elastic Path knowledge base before answering any questions.
         Only respond to questions using information from tool calls.
         if no relevant information is found in the tool calls, respond, "Sorry, I don't know."
-        From the documents returned, after you have answered the question, provide a list of links to the documents that are most relevant to the question.`;
+        From the documents returned, after you have answered the question, provide a list of links to the documents that are most relevant to the question.
+        Build any of the relative links doing the following:
+        - remove the /data_md/ prefix
+        - remove the .md suffix
+        - replace spaces with hyphens
+        using https://elasticpath.dev as the root`;
 
-    const result = await streamText({
+    const result = streamText({
         model: openai('gpt-4o'),
         messages: [
             { role: "assistant", content: assistantPrompt },
             //{ role: "user", content: `.. ${latestMessage}` }, // this is already in the messages array
             ...messages
         ],
-        //experimental_toolCallStreaming: true,
+
         maxSteps: 3,
         tools: {
             getContent: tool({
@@ -77,6 +82,13 @@ export async function POST(request: Request) {
         },
         // maxToolRoundtrips: 3,
         //toolChoice: 'required',
+        onFinish: ({ usage }) => {
+            const { promptTokens, completionTokens, totalTokens } = usage;
+            // your own logic, e.g. for saving the chat history or recording usage
+            console.log('Prompt tokens:', promptTokens);
+            console.log('Completion tokens:', completionTokens);
+            console.log('Total tokens:', totalTokens);
+        },
     });
 
     return result.toDataStreamResponse();

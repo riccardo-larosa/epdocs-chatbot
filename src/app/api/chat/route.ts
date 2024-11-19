@@ -1,4 +1,4 @@
-import { ChatOpenAI } from '@langchain/openai';
+//import { ChatOpenAI } from '@langchain/openai';
 import { streamText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { findRelevantContent } from '@/lib/mongoDbRetriever';

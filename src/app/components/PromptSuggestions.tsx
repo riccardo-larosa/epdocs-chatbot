@@ -3,9 +3,9 @@ const PromptSuggestions = ({ onPromptClick }: { onPromptClick: (prompt: string) 
     const prompts = [
         "What is PXM?",
         "Explain the difference between Node and Hierarchy",
-        "What tools or frameworks can I integrate with MongoDB?",
-        "Show examples of how to use vector search in MongoDB",
-        "Where can I find MongoDB-related forums and communities?",
+        "Give me an example on where to use custom api",
+        "How do I build a promotion for 20% when cart total is $100 using rule promotion",
+        "How can I add a custom attribute to a product?",
     ];
 
     return (
