@@ -110,7 +110,7 @@ export default function Ask() {
       <div className="fixed bottom-0 w-full max-w-3xl bg-white pt-6">
         <form onSubmit={handleSubmit} className="flex flex-col justify-center items-center px-6">
           <div className={`w-full flex items-center p-2 mb-2 border-2 border-gray-300 rounded-full shadow-xl 
-              ${isLoading ? 'animate-pulse border-blue-400 border-4' : ''}`}>
+              ${isLoading ? 'animate-pulse border-blue-600 border-4' : ''}`}>
             <Sparkles className="w-5 h-5 text-gray-400 mr-2" />
             <input
               className="w-full bg-transparent focus:outline-none"
