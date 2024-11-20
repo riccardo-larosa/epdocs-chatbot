@@ -44,10 +44,12 @@ export async function findRelevantContent(question: string) {
     // Get relevant documents
     console.log(`question: ${question}`);
     const results = await agent.similaritySearch(question);
-    const context = results.map(doc => doc.pageContent).join('\n\n');
+    //const context = results.map(doc => doc.pageContent).join('\n\n');
     // log the first 100 characters of the context
-    console.log(`context: ${context.slice(0, 100)}`);
+    //console.log(`context: ${context.slice(0, 100)}`);
     //return context;
+    const docs = results.map(doc => doc.metadata.source).join('\n');
+    console.log(`docs: ${docs}`);
     return results;
 
 }

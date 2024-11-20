@@ -1,47 +1,54 @@
-//import { ChatOpenAI } from '@langchain/openai';
+
 import { streamText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { findRelevantContent } from '@/lib/mongoDbRetriever';
 
 export async function POST(req: Request) {
     try {
-        const { messages } = await req.json();
-        const question = messages[messages.length - 1].content;
-        console.log(`question: ${question}`);
+        const { messages, useTools } = await req.json();
+        const latestMessage = messages[messages?.length - 1]?.content;
+        console.log(`question: ${latestMessage}`);
 
-        // const config = {
-        //     mongodbUri: process.env.MONGODB_CONNECTION_URI!,
-        //     dbName: process.env.MONGODB_DATABASE_NAME!,
-        //     collectionName: process.env.MONGODB_COLLECTION_NAME!,
-        //     openaiApiKey: process.env.OPENAI_API_KEY!,
-        //     topK: 3,
-        //     indexName: "vector_index",
-        // };
+        messages?.map((msg: any) => (
+            console.log(`role: ${msg.role}, content: ${msg.content}`)
+        ));
 
-        // const agent = new MongoDBRetriever();
-        // await agent.init(config);
+        const content = await findRelevantContent(latestMessage);
+        const context = content.map(doc => doc.pageContent).join('\n\n');
+        //console.log(`context: ${context}`);
 
-        // // Get relevant documents
-        // const results = await agent.similaritySearch(question);
-        // const context = results.map(doc => doc.pageContent).join('\n\n');
-        const context = await findRelevantContent(question);
-        console.log(`context: ${context}`);
-
-        const systemPrompt = 
-                `Answer the following question based on the context:
-
-                Question: ${question}
+        const systemPrompt = `You are knowledgeable about Elastic Path products. You can answer any questions about 
+                Commerce Manager, 
+                Product Experience Manager also known as PXM,
+                Cart and Checkout,
+                Promotions,
+                Composer,
+                Payments
+                Subscriptions,
+                Studio.
+                Check Elastic Path knowledge base before answering any questions.
+                
+                ${useTools ? `Only respond to questions using information from tool calls.   
+                if no relevant information is found in the tool calls, respond, "Sorry, I don't know."
+                ` : `
+                Answer the following question based on the context:
+                Question: ${latestMessage}
                 Context: ${context}
-
+                if no relevant information is found, respond, "Sorry, I don't know."
+                `}
+                    
+                From the documents returned, after you have answered the question, provide a list of links to the documents that are most relevant to the question.
+                Build any of the relative links doing the following:
+                - remove the /data_md/ prefix
+                - remove the .md suffix
+                - replace spaces with hyphens
+                using https://elasticpath.dev as the root
+                
                 Answer the question in a helpful and comprehensive way.`;
 
-        console.log(`systemPrompt: ${systemPrompt}`);
-        // const model = new ChatOpenAI({
-        //     temperature: 0.8,
-        //     streaming: true,
-        // });
+        //console.log(`systemPrompt: ${systemPrompt}`);
 
-        const result = await streamText({
+        const result =  streamText({
             model: openai('gpt-4o'),
             messages: [{ role: 'system', content: systemPrompt }, ...messages],
         });

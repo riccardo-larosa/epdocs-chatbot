@@ -5,12 +5,16 @@ import { SendIcon, Sparkles } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import PromptSuggestions from '../components/PromptSuggestions';
 import EpIcon from '../components/icons/EpIcon';
-import ReactMarkdown from 'react-markdown';
+// import ReactMarkdown from 'react-markdown';
 // import LoadingBubbles from '../components/LoadingBubbles';
 import React from 'react';
+import FormatResponse from '../components/FormatResponse';
+import LoadingBubbles from '../components/LoadingBubbles';
 export default function Ask_Stream() {
   const { messages, input, handleInputChange, handleSubmit, error, append, isLoading } = useChat(
-    { api: '/api/chat-stream' }
+    { api: '/api/chat-stream',
+      body: { useTools: true }
+     }
   );
   const newSession = !messages || messages.length === 0;
   const handlePrompt = (prompt: string) => {
@@ -85,33 +89,7 @@ export default function Ask_Stream() {
                           <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center flex-shrink-0">
                             <EpIcon className="w-5 h-5 text-emerald-500" />
                           </div>
-                          <div className="bg-gray-100 rounded-lg p-4 max-w-[80%] shadow-md">
-                            <ReactMarkdown
-                              components={{
-                                h1: ({ ...props }) => <h1 className="text-2xl font-bold my-3" {...props} />,
-                                h2: ({ ...props }) => <h2 className="text-xl font-bold my-2" {...props} />,
-                                h3: ({ ...props }) => <h3 className="text-lg font-bold my-1" {...props} />,
-                                ul: ({ ...props }) => <ul className="list-disc ml-4 my-1" {...props} />,
-                                ol: ({ ...props }) => <ol className="list-decimal ml-4 my-1" {...props} />,
-                                //li: ({ node, children, ...props }) => <li className="" {...props} />,
-                                li: ({ children, ...props }) => {
-                                  // If children is wrapped in a p tag, get its children instead
-                                  const content = React.Children.map(children, child => {
-                                    if (React.isValidElement(child) && child.type === 'p') {
-                                      return child.props.children;
-                                    }
-                                    return child;
-                                  });
-                                  return <li className="" {...props}>{content}</li>;
-                                },
-                                a: ({ ...props }) => (
-                                  <a className="text-blue-600 hover:text-blue-800 underline" {...props} />
-                                ),
-                              }}
-                            >
-                              {m.content}
-                            </ReactMarkdown>
-                          </div>
+                          <FormatResponse content={m.content} />
                         </div>
                       </>
                     )}
@@ -139,8 +117,9 @@ export default function Ask_Stream() {
               value={input}
               placeholder={isLoading ? "Answering..." : "Ask a Question"}
               onChange={handleInputChange}
+              disabled={isLoading}
             />
-            <button className="text-gray-400 hover:text-gray-600 ml-2">
+            <button type="submit" className="text-gray-400 hover:text-gray-600 ml-2">
               <SendIcon className="w-5 h-5" />
             </button>
           </div>
