@@ -2,6 +2,7 @@ import { streamText, tool } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { findRelevantContent } from '@/lib/mongoDbRetriever';
 import { z } from 'zod';
+import { AISDKExporter } from 'langsmith/vercel';
 
 
 export async function POST(request: Request) {
@@ -57,6 +58,7 @@ export async function POST(request: Request) {
         result =  streamText({
             model: openai('gpt-4o'),
             messages: [{ role: 'system', content: systemPrompt }, ...messages],
+            experimental_telemetry: AISDKExporter.getSettings(),
         });
     }
 
@@ -66,6 +68,7 @@ export async function POST(request: Request) {
             { role: "system", content: systemPrompt },
             ...messages
         ],
+        experimental_telemetry: AISDKExporter.getSettings(),
         maxSteps: 3,
         tools: {
             getContent: tool({

@@ -34,7 +34,7 @@ export async function findRelevantContent(question: string) {
         dbName: process.env.MONGODB_DATABASE_NAME!,
         collectionName: process.env.MONGODB_COLLECTION_NAME!,
         openaiApiKey: process.env.OPENAI_API_KEY!,
-        topK: 3,
+        topK: 5,
         indexName: "vector_index",
     };
 
