@@ -3,6 +3,7 @@ import { openai } from '@ai-sdk/openai';
 import { findRelevantContent } from '@/lib/mongoDbRetriever';
 import { z } from 'zod';
 import { AISDKExporter } from 'langsmith/vercel';
+import { llmobs } from 'dd-trace';
 
 
 export async function POST(request: Request) {
@@ -11,6 +12,8 @@ export async function POST(request: Request) {
     console.log(`useTools: ${useTools}`);
     const latestMessage = messages[messages?.length - 1]?.content;
     console.log(`latestMessage: ${latestMessage}`);
+
+  
 
     console.log('messages:-------------------');
     messages?.map((msg: any) => (
@@ -44,6 +47,7 @@ export async function POST(request: Request) {
             `}
                 
             From the documents returned, after you have answered the question, provide a list of links to the documents that are most relevant to the question.
+            They should open in a new tab.
             Build any of the relative links doing the following:
             - remove the /data_md/ prefix
             - remove the .md suffix
@@ -55,6 +59,7 @@ export async function POST(request: Request) {
     let result;
 
     if (!useTools) {
+
         result =  streamText({
             model: openai('gpt-4o'),
             messages: [{ role: 'system', content: systemPrompt }, ...messages],
@@ -62,30 +67,41 @@ export async function POST(request: Request) {
         });
     }
 
+    // Start a new LLM span
+    //llmobs.wrap({ kind: 'tool' }, findRelevantContent);
+
     result = streamText({
-        model: openai('gpt-4o'),
-        messages: [
-            { role: "system", content: systemPrompt },
-            ...messages
-        ],
-        experimental_telemetry: AISDKExporter.getSettings(),
-        maxSteps: 3,
-        tools: {
-            getContent: tool({
-                description: 'get content from Elastic Path knowledge base',
-                parameters: z.object({
-                    latestMessage: z.string().describe('the users question'),
-                }),
-                execute: async ({ latestMessage }) => findRelevantContent(latestMessage),
-            })
-        },
-        onFinish: ({ usage }) => {
-            const { promptTokens, completionTokens, totalTokens } = usage;
-            console.log('Prompt tokens:', promptTokens);
-            console.log('Completion tokens:', completionTokens);
-            console.log('Total tokens:', totalTokens);
-        },
-    });
+            model: openai('gpt-4o'),
+            messages: [
+                { role: "system", content: systemPrompt },
+                ...messages
+            ],
+            //experimental_telemetry: AISDKExporter.getSettings(),
+            maxSteps: 3,
+            tools: {
+                getContent: tool({
+                    description: 'get content from Elastic Path knowledge base',
+                    parameters: z.object({
+                        latestMessage: z.string().describe('the users question'),
+                    }),
+                    execute: async ({ latestMessage }) => findRelevantContent(latestMessage),
+                })
+            },
+            onFinish: ({ usage, text }) => {
+                const { promptTokens, completionTokens, totalTokens } = usage;
+                console.log('Prompt tokens:', promptTokens);
+                console.log('Completion tokens:', completionTokens);
+                console.log('Total tokens:', totalTokens);
+                llmobs.trace({ kind: 'llm', name: 'myLLM', modelName: 'gpt-4o', modelProvider: 'openai' }, () => {
+                    llmobs.annotate({
+                        inputData: [ { content: `${latestMessage}`, role: 'user' }],
+                        outputData: { content: `${text}`, role: 'ai' },
+                        tags: { host: process.env.NEXT_PUBLIC_VERCEL_URL },
+                        metrics: { inputTokens: promptTokens, outputTokens: completionTokens, totalTokens: totalTokens }
+                    })
+                })
+            },
+        });
 
     return result.toDataStreamResponse();
 

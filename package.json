@@ -15,6 +15,7 @@
     "@langchain/openai": "^0.3.13",
     "@vercel/otel": "^1.10.0",
     "ai": "^4.0.0",
+    "dd-trace": "^5.26.0",
     "dotenv": "^16.4.5",
     "langchain": "^0.3.5",
     "langsmith": "^0.2.6",
