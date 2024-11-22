@@ -43,7 +43,9 @@ export async function POST(request: Request) {
             Answer the following question based on the context:
             Question: ${latestMessage}
             Context: ${context}
-            if no relevant information is found, respond, "Sorry, I don't know."
+            if no relevant information is found, respond, 
+                "I'm sorry, I don't have enough context to answer that question with confidence. 
+                Please try another question, visit elasticpath.dev to learn more, or reach out to our support team."
             `}
                 
             From the documents returned, after you have answered the question, provide a list of links to the documents that are most relevant to the question.
@@ -89,6 +91,7 @@ export async function POST(request: Request) {
             },
             onFinish: ({ usage, text }) => {
                 const { promptTokens, completionTokens, totalTokens } = usage;
+                console.log(`markdown text: ${text}`);
                 console.log('Prompt tokens:', promptTokens);
                 console.log('Completion tokens:', completionTokens);
                 console.log('Total tokens:', totalTokens);
