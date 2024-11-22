@@ -1,4 +1,4 @@
-// import { registerOTel } from "@vercel/otel";
+import { registerOTel } from "@vercel/otel";
 // import { AISDKExporter } from "langsmith/vercel";
 
 
@@ -12,6 +12,9 @@ export function register() {
 
   if (process.env.NEXT_RUNTIME === 'nodejs') {  // Only run on server
 
+    registerOTel({
+      serviceName: "epdocs-chatbot-datadog",
+    });
     const tracer = require('dd-trace');
     console.log(`dd-api-key: ${process.env.DD_API_KEY?.slice(0, 5)}...`);
     tracer.init({
