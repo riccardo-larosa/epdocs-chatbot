@@ -38,16 +38,15 @@ export async function POST(request: Request) {
             Check Elastic Path knowledge base before answering any questions.
             
             ${useTools ? `Only respond to questions using information from tool calls.   
-            if no relevant information is found in the tool calls, respond, "Sorry, I don't know."
             ` : `
             Answer the following question based on the context:
             Question: ${latestMessage}
             Context: ${context}
-            if no relevant information is found, respond, 
-                "I'm sorry, I don't have enough context to answer that question with confidence. 
-                Please try another question, visit elasticpath.dev to learn more, or reach out to our support team."
             `}
-                
+            If no relevant information is found, respond, 
+                "I'm sorry, I don't have enough context to answer that question with confidence. 
+                Please try another question, visit https://elasticpath.dev to learn more, or reach out to our support team."
+                                
             From the documents returned, after you have answered the question, provide a list of links to the documents that are most relevant to the question.
             They should open in a new tab.
             Build any of the relative links doing the following:
