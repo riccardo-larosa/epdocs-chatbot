@@ -1,16 +1,20 @@
 
 const PromptSuggestions = ({ onPromptClick }: { onPromptClick: (prompt: string) => void }) => {
-    
-    if (process.env.MONGODB_COLLECTION_NAME?.includes('EPSM')) {
-        return null;
+    let prompts = [];
+    if (process.env.NEXT_PUBLIC_SITE?.includes('EPSM')) {
+        prompts = [
+            "What is included in version 8.6?",
+            
+        ];
+    } else {
+        prompts = [
+            "What is PXM?",
+            "Explain the difference between Node and Hierarchy",
+            "Give me an example on where to use custom api",
+            "How do I build a promotion for 20% when cart total is $100 using rule promotion",
+            "How can I add a custom attribute to a product?",
+        ];
     }
-    const prompts = [
-        "What is PXM?",
-        "Explain the difference between Node and Hierarchy",
-        "Give me an example on where to use custom api",
-        "How do I build a promotion for 20% when cart total is $100 using rule promotion",
-        "How can I add a custom attribute to a product?",
-    ];
 
     return (
         <div className="mb-8">

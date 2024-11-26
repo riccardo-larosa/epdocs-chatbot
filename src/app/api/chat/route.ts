@@ -2,7 +2,7 @@ import { streamText, tool } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { findRelevantContent } from '@/lib/mongoDbRetriever';
 import { z } from 'zod';
-import { AISDKExporter } from 'langsmith/vercel';
+// import { AISDKExporter } from 'langsmith/vercel';
 import { llmobs } from 'dd-trace';
 
 
@@ -12,8 +12,8 @@ export async function POST(request: Request) {
     console.log(`useTools: ${useTools}`);
     const latestMessage = messages[messages?.length - 1]?.content;
     console.log(`latestMessage: ${latestMessage}`);
-
-  
+    const site = process.env.NEXT_PUBLIC_SITE;
+    console.log(`site: ${site}`);
 
     console.log('messages:-------------------');
     messages?.map((msg: any) => (
@@ -50,10 +50,19 @@ export async function POST(request: Request) {
             From the documents returned, after you have answered the question, provide a list of links to the documents that are most relevant to the question.
             They should open in a new tab.
             Build any of the relative links doing the following:
+            ${site === 'EPSM' ? `  
+            - remove the website/versioned_docs/ prefix
+            - replace the .md suffix with .html
+            - replace spaces with hyphens
+            - replace /version-N.M.x/ with /N.M.x/ for everything except /version-8.6.x/
+            - remove /version-8.6.x/ if it exists
+            using https://documentation.elasticpath.com/commerce/docs as the root
+            ` : `
             - remove the /data_md/ prefix
             - remove the .md suffix
             - replace spaces with hyphens
             using https://elasticpath.dev as the root
+            `}
             
             Answer the question in a helpful and comprehensive way. `;
 
@@ -64,7 +73,7 @@ export async function POST(request: Request) {
         result =  streamText({
             model: openai('gpt-4o'),
             messages: [{ role: 'system', content: systemPrompt }, ...messages],
-            experimental_telemetry: AISDKExporter.getSettings(),
+            // experimental_telemetry: AISDKExporter.getSettings(),
         });
     }
 
