@@ -1,5 +1,9 @@
 
 const PromptSuggestions = ({ onPromptClick }: { onPromptClick: (prompt: string) => void }) => {
+    
+    if (process.env.MONGODB_COLLECTION_NAME?.includes('EPSM')) {
+        return null;
+    }
     const prompts = [
         "What is PXM?",
         "Explain the difference between Node and Hierarchy",
