@@ -55,7 +55,7 @@ export async function POST(request: Request) {
             - replace spaces with hyphens
             using https://elasticpath.dev as the root
             
-            Answer the question in a helpful and comprehensive way.`;
+            Answer the question in a helpful and comprehensive way. `;
 
     let result;
 
