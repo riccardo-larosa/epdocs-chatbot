@@ -1,6 +1,6 @@
 import { streamText, tool } from 'ai';
 import { openai } from '@ai-sdk/openai';
-import { findRelevantContent } from '@/lib/mongoDbRetriever';
+import { findRelevantContent, findTechnicalContent } from '@/lib/mongoDbRetriever';
 import { z } from 'zod';
 // import { AISDKExporter } from 'langsmith/vercel';
 import { llmobs } from 'dd-trace';
@@ -95,7 +95,14 @@ export async function POST(request: Request) {
                         latestMessage: z.string().describe('the users question'),
                     }),
                     execute: async ({ latestMessage }) => findRelevantContent(latestMessage),
-                })
+                }),
+                getTechnicalContent: tool({
+                    description: 'get technical content, like API reference from Elastic Path API reference',
+                    parameters: z.object({
+                        latestMessage: z.string().describe('the users question'),
+                    }),
+                    execute: async ({ latestMessage }) => findTechnicalContent(latestMessage),
+                }),
             },
             onFinish: ({ usage, text }) => {
                 const { promptTokens, completionTokens, totalTokens } = usage;

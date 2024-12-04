@@ -53,3 +53,16 @@ export async function findRelevantContent(question: string) {
     return results;
 
 }
+
+export async function findTechnicalContent(question: string) {
+    const config = {
+        mongodbUri: process.env.MONGODB_CONNECTION_URI!,
+        dbName: process.env.MONGODB_DATABASE_NAME!,
+        collectionName: process.env.MONGODB_API_COLLECTION_NAME!,
+        openaiApiKey: process.env.OPENAI_API_KEY!,
+    };
+    const apiAgent = new MongoDBRetriever();
+    await apiAgent.init(config);
+    const results = await apiAgent.similaritySearch(question);
+    return results;
+}
