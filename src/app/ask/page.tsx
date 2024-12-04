@@ -39,15 +39,8 @@ export default function Ask() {
 
   return (
     <div className="relative w-full max-w-3xl mx-auto">
-      <div className="flex flex-col w-full max-w-3xl px-6 pt-24 mx-auto stretch bg-[#F9FBFA]">
-        <div className="fixed top-0 left-0 right-0 h-24 flex items-center justify-center bg-[#F9FBFA] border-b">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center flex-shrink-0">
-              <EpIcon className="w-5 h-5 text-emerald-500" />
-            </div>
-            <span className="text-lg font-semibold">Elastic Path Docs Chat</span>
-          </div>
-        </div>
+      <div className="flex flex-col w-full max-w-3xl px-6 pt-6 mx-auto stretch bg-[#F9FBFA]">
+
         <section className="h-[calc(100vh-200px)] mb-32">
           <div className="space-y-4 overflow-y-auto h-full ">
 
