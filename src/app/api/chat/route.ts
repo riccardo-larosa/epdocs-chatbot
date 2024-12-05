@@ -58,10 +58,9 @@ export async function POST(request: Request) {
             - remove /version-8.6.x/ if it exists
             using https://documentation.elasticpath.com/commerce/docs as the root
             ` : `
-            - remove the /data_md/ prefix
-            - remove the .md suffix
-            - replace spaces with hyphens
-            using https://elasticpath.dev as the root
+            
+            - remove the .md suffix from the source value
+            - use https://elasticpath.dev/ as the root
             `}
             
             Answer the question in a helpful and comprehensive way. `;
@@ -75,6 +74,8 @@ export async function POST(request: Request) {
             messages: [{ role: 'system', content: systemPrompt }, ...messages],
             // experimental_telemetry: AISDKExporter.getSettings(),
         });
+
+        return result.toDataStreamResponse();
     }
 
     // Start a new LLM span

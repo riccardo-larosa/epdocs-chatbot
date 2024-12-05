@@ -13,12 +13,12 @@ export function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {  // Only run on server
 
     registerOTel({
-      serviceName: "epdocs-chatbot-datadog",
+      serviceName: "epdocs-chat-dd",
     });
     const tracer = require('dd-trace');
     console.log(`dd-api-key: ${process.env.DD_API_KEY?.slice(0, 5)}...`);
     tracer.init({
-      service: 'epdocs-chatbot-datadog',
+      service: 'epdocs-chat-dd',
       env: process.env.DD_ENV,
       llmobs: {
         mlApp: process.env.DD_LLMOB_ML_APP,
