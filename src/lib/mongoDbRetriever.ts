@@ -47,7 +47,7 @@ export async function findRelevantContent(question: string) {
         const results = await agent.similaritySearch(question);
         
         const docs = results.map(doc => doc.metadata.source).join('\n');
-        console.log(`sources: -----------------------\n ${docs}`);
+        console.log(`Content sources: -----------------------\n ${docs}`);
         return results;
     } catch (error) {
         console.error('Error during MongoDB retrieval:', error);
@@ -70,7 +70,7 @@ export async function findTechnicalContent(question: string) {
         await apiAgent.init(config);
         const results = await apiAgent.similaritySearch(question);
         const docs = results.map(doc => doc.metadata.source).join('\n');
-        console.log(`sources: -----------------------\n ${docs}`);
+        console.log(`APIsources: -----------------------\n ${docs}`);
         return results;
     } catch (error) {
         console.error('Error during MongoDB retrieval:', error);
