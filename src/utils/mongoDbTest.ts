@@ -37,7 +37,7 @@ export async function testMongoDBConnection() {
     const sampleDocs = await collection.find({}).limit(3).toArray();
     console.log('\n📄 Sample Document:');
     if (sampleDocs.length > 0) {
-      console.log(JSON.stringify(sampleDocs[0], null, 2));
+      // console.log(JSON.stringify(sampleDocs[0], null, 2));
     }
 
     return {
