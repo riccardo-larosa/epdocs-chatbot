@@ -4,7 +4,7 @@ import { findRelevantContent, findTechnicalContent } from '@/lib/mongoDbRetrieve
 import { z } from 'zod';
 // import { AISDKExporter } from 'langsmith/vercel';
 import { llmobs } from 'dd-trace';
-
+import * as prompts from '@/constants/prompts';
 
 export async function POST(request: Request) {
 
@@ -21,54 +21,17 @@ export async function POST(request: Request) {
     ));
     
     let context = '';
+    let systemPrompt = '';
+    let result: any;
+
     if (!useTools) {
         const content = await findRelevantContent(latestMessage);
         context = content.map(doc => doc.pageContent).join('\n\n');
-    }
-
-    const systemPrompt = `You are knowledgeable about Elastic Path products. You can answer any questions about 
-            Commerce Manager, 
-            Product Experience Manager also known as PXM,
-            Cart and Checkout,
-            Promotions,
-            Composer,
-            Payments
-            Subscriptions,
-            Studio.
-            Check Elastic Path knowledge base before answering any questions.
-            
-            ${useTools ? `Only respond to questions using information from tool calls.   
-            ` : `
+        systemPrompt = prompts.PROMPT_EPCC_DOCS_INTRO + `
             Answer the following question based on the context:
             Question: ${latestMessage}
             Context: ${context}
-            `}
-            If no relevant information is found, respond, 
-                "I'm sorry, I don't have enough context to answer that question with confidence. 
-                Please try another question, visit https://elasticpath.dev to learn more, or reach out to our support team."
-                                
-            From the documents returned, after you have answered the question, provide a list of links to the documents that are most relevant to the question.
-            They should open in a new tab.
-            Build any of the relative links doing the following:
-            ${site === 'EPSM' ? `  
-            - remove the website/versioned_docs/ prefix
-            - replace the .md suffix with .html
-            - replace spaces with hyphens
-            - replace /version-N.M.x/ with /N.M.x/ for everything except /version-8.6.x/
-            - remove /version-8.6.x/ if it exists
-            using https://documentation.elasticpath.com/commerce/docs as the root
-            ` : `
-            
-            - remove the .md suffix from the source value
-            - use https://elasticpath.dev/ as the root
-            `}
-            
-            Answer the question in a helpful and comprehensive way. `;
-
-    let result;
-
-    if (!useTools) {
-
+            ` + prompts.PROMPT_EPCC_DOCS_OUTRO;
         result =  streamText({
             model: openai('gpt-4o'),
             messages: [{ role: 'system', content: systemPrompt }, ...messages],
@@ -78,6 +41,12 @@ export async function POST(request: Request) {
         return result.toDataStreamResponse();
     }
 
+    if (site === 'EPCC') {
+        systemPrompt = prompts.PROMPT_EPCC_DOCS_INTRO + prompts.PROMPT_EPCC_DOCS_WITH_TOOLS + prompts.PROMPT_EPCC_DOCS_OUTRO;
+    } else {
+        systemPrompt = prompts.PROMPT_EPSM_DOCS_INTRO + prompts.PROMPT_EPSM_DOCS_OUTRO;
+    }
+    console.log(`systemPrompt: ${systemPrompt}`);
     // Start a new LLM span
     //llmobs.wrap({ kind: 'tool' }, findRelevantContent);
 
@@ -98,7 +67,7 @@ export async function POST(request: Request) {
                     execute: async ({ latestMessage }) => findRelevantContent(latestMessage),
                 }),
                 getTechnicalContent: tool({
-                    description: 'get technical content, like API reference from Elastic Path API reference',
+                    description: 'get technical content, like API reference and code from Elastic Path API reference',
                     parameters: z.object({
                         latestMessage: z.string().describe('the users question'),
                     }),

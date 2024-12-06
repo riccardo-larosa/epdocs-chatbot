@@ -29,6 +29,7 @@ export class MongoDBRetriever {
 }
 
 export async function findRelevantContent(question: string) {
+    console.log(`calling findRelevantContent with question: ${question}`);
     const config = {
         mongodbUri: process.env.MONGODB_CONNECTION_URI!,
         dbName: process.env.MONGODB_DATABASE_NAME!,
@@ -39,30 +40,40 @@ export async function findRelevantContent(question: string) {
     };
 
     const agent = new MongoDBRetriever();
-    await agent.init(config);
+    try {
+        await agent.init(config);
 
-    // Get relevant documents
-    //console.log(`question: ${question}`);
-    const results = await agent.similaritySearch(question);
-    //const context = results.map(doc => doc.pageContent).join('\n\n');
-    // log the first 100 characters of the context
-    //console.log(`context: ${context.slice(0, 100)}`);
-    //return context;
-    const docs = results.map(doc => doc.metadata.source).join('\n');
-    console.log(`sources: -----------------------\n ${docs}`);
-    return results;
+        // Get relevant documents
+        const results = await agent.similaritySearch(question);
+        
+        const docs = results.map(doc => doc.metadata.source).join('\n');
+        console.log(`sources: -----------------------\n ${docs}`);
+        return results;
+    } catch (error) {
+        console.error('Error during MongoDB retrieval:', error);
+        throw error; // or handle the error as needed
+    }
 
 }
 
 export async function findTechnicalContent(question: string) {
+    console.log(`calling findTechnicalContent with question: ${question}`);
     const config = {
         mongodbUri: process.env.MONGODB_CONNECTION_URI!,
         dbName: process.env.MONGODB_DATABASE_NAME!,
         collectionName: process.env.MONGODB_API_COLLECTION_NAME!,
         openaiApiKey: process.env.OPENAI_API_KEY!,
     };
+    
     const apiAgent = new MongoDBRetriever();
-    await apiAgent.init(config);
-    const results = await apiAgent.similaritySearch(question);
-    return results;
+    try {
+        await apiAgent.init(config);
+        const results = await apiAgent.similaritySearch(question);
+        const docs = results.map(doc => doc.metadata.source).join('\n');
+        console.log(`sources: -----------------------\n ${docs}`);
+        return results;
+    } catch (error) {
+        console.error('Error during MongoDB retrieval:', error);
+        throw error; // or handle the error as needed
+    }
 }

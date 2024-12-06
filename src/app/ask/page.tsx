@@ -3,11 +3,11 @@
 import { Message, useChat } from 'ai/react';
 import { SendIcon, Sparkles } from 'lucide-react';
 import { useEffect, useRef } from 'react';
-import PromptSuggestions from '../components/PromptSuggestions';
-import EpIcon from '../components/icons/EpIcon';
+import PromptSuggestions from '@/components/PromptSuggestions';
+import EpIcon from '@/components/icons/EpIcon';
 // import LoadingBubbles from '../components/LoadingBubbles';
 import React from 'react';
-import FormatResponse from '../components/FormatResponse';
+import FormatResponse from '@/components/FormatResponse';
 
 export default function Ask() {
   const { messages, input, handleInputChange, handleSubmit, error, append, isLoading } = useChat(
