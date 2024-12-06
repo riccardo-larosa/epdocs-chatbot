@@ -39,17 +39,17 @@ export default function Ask() {
 
   return (
     <div className="relative w-full max-w-3xl mx-auto">
-      <div className="flex flex-col w-full max-w-3xl px-6 pt-6 mx-auto stretch bg-[#F9FBFA]">
+      <div className="flex flex-col w-full max-w-3xl px-6 pt-6 mx-auto stretch bg-[#F9FBFA] dark:bg-[#1F2937]">
 
         <section className="h-[calc(100vh-200px)] mb-32">
           <div className="space-y-4 overflow-y-auto h-full ">
 
             <div className="flex gap-3 mb-6">
-              <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center flex-shrink-0">
-                <EpIcon className="w-5 h-5 text-emerald-500" />
-              </div>
-              <div className="bg-gray-100 rounded-lg p-4 max-w-[80%]">
-                <p> Welcome! I&apos;m the Elastic Path AI. What can I help you with today?</p>
+              <div className="bg-gray-200 rounded-lg p-4 max-w-[80%] dark:bg-gray-600 dark:text-gray-300">
+                <div className="flex items-center">
+                  <EpIcon className="text-emerald-500 dark:text-emerald-400 w-8 h-8" />
+                  <p>I&apos;m the Elastic Path AI. What can I help you with today?</p>
+                </div>
               </div>
             </div>
 
@@ -67,19 +67,19 @@ export default function Ask() {
                     {m.role === 'user' ? (
                       <>
                         <div className="flex flex-row-reverse gap-3">
-                          <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
-                            <svg className="w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="currentColor">
+                          <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0 dark:bg-gray-600">
+                            <svg className="w-8 h-8 text-gray-600 dark:text-gray-400" viewBox="0 0 24 24" fill="currentColor">
                               <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                             </svg>
                           </div>
-                          <p className="bg-blue-100 rounded-lg p-4 max-w-[80%] shadow-md">{m.content}</p>
+                          <p className="bg-emerald-600 rounded-lg p-2 max-w-[80%] shadow-md dark:bg-emerald-800 text-white">{m.content}</p>
                         </div>
                       </>
                     ) : m.role === 'assistant' && m.content && (
                       <>
                         <div className="flex gap-3">
-                          <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center flex-shrink-0">
-                            <EpIcon className="w-5 h-5 text-emerald-500" />
+                          <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center flex-shrink-0 dark:bg-gray-700">
+                            <EpIcon className="w-8 h-8 text-emerald-500 dark:text-emerald-400" />
                           </div>
                           <FormatResponse content={m.content} />
                         </div>
@@ -99,10 +99,10 @@ export default function Ask() {
           </div>
         </section>
       </div>
-      <div className="fixed bottom-0 w-full max-w-3xl bg-white pt-6">
+      <div className="fixed bottom-0 w-full max-w-3xl bg-white dark:bg-[#1F2937] pt-6">
         <form onSubmit={handleSubmit} className="flex flex-col justify-center items-center px-6">
           <div className={`w-full flex items-center p-2 mb-2 rounded-full shadow-xl 
-              ${isLoading ? ' animate-pulse border-blue-600 border-4' : ' border-2 border-gray-300 '}`}>
+              ${isLoading ? ' animate-pulse border-slate-600 border-4' : ' border-2 border-slate-700 '}`}>
             <Sparkles className="w-5 h-5 text-gray-400 mr-2" />
             <input
               className="w-full bg-transparent focus:outline-none"
