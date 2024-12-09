@@ -1,6 +1,7 @@
 import { streamText, tool } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { findRelevantContent, findTechnicalContent } from '@/lib/mongoDbRetriever';
+import { execGetRequest } from '@/lib/execRequests';
 import { z } from 'zod';
 // import { AISDKExporter } from 'langsmith/vercel';
 import { llmobs } from 'dd-trace';
@@ -73,6 +74,15 @@ export async function POST(request: Request) {
                     }),
                     execute: async ({ latestMessage }) => findTechnicalContent(latestMessage),
                 }),
+                // execGetRequest: tool({
+                //     description: 'execute a GET request to the specified endpoint',
+                //     parameters: z.object({
+                //         endpoint: z.string().describe('the endpoint to call'),
+                //         token: z.string().describe('the token to use'),
+                //         params: z.record(z.string(), z.string()).describe('the parameters to pass to the endpoint'),
+                //     }),
+                //     execute: async ({ endpoint, token, params }) => execGetRequest(endpoint, token, params),
+                // }),
             },
             onFinish: ({ usage, text }) => {
                 const { promptTokens, completionTokens, totalTokens } = usage;
