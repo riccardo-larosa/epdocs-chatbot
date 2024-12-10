@@ -4,6 +4,22 @@ import remarkGfm from 'remark-gfm';
 import rehypeSanitize from 'rehype-sanitize';
 import { Highlight, themes, Language } from 'prism-react-renderer';
 import { useTheme } from 'next-themes';
+import { visit } from 'unist-util-visit';
+import type { Plugin } from 'unified';
+
+// Custom remark plugin to handle code blocks
+const remarkCodeBlocks: Plugin = () => {
+    return (tree) => {
+        visit(tree, 'paragraph', (node: any, index: number, parent: any) => {
+            if (
+                node.children?.length === 1 &&
+                node.children[0].type === 'code'
+            ) {
+                parent.children[index] = node.children[0];
+            }
+        });
+    };
+};
 
 type CodeProps = {
     className?: string;
@@ -15,7 +31,6 @@ const getLanguage = (className: string | undefined): Language => {
     const match = /language-(\w+)/.exec(className || '');
     const lang = match ? match[1].toLowerCase() : '';
     
-    // Convert common aliases
     switch (lang) {
         case 'sh':
         case 'curl':
@@ -49,31 +64,31 @@ const CodeBlock = React.memo(({ className, children, inline, ...props }: CodePro
         const code = String(children).replace(/\n$/, '');
         
         return (
-            <pre 
-                className="text-sm align-baseline"
-            >
-                <Highlight
-                    theme={currentTheme === 'dark' ? themes.vsDark : themes.vsLight}
-                    code={code}
-                    language={language}
-                >
-                    {({ className, style, tokens, getLineProps, getTokenProps }) => (
-                        <code className={`${className} whitespace-pre`} style={style}>
-                            {tokens.map((line, i) => (
-                                <span 
-                                    key={i} 
-                                    {...getLineProps({ line })}
-                                    className="token-line text-md leading-6 block"
-                                >
-                                    {line.map((token, key) => (
-                                        <span key={key} {...getTokenProps({ token })} />
-                                    ))}
-                                </span>
-                            ))}
-                        </code>
-                    )}
-                </Highlight>
-            </pre>
+            <div className="not-prose my-4">
+                <pre className="text-sm align-baseline">
+                    <Highlight
+                        theme={currentTheme === 'dark' ? themes.vsDark : themes.vsLight}
+                        code={code}
+                        language={language}
+                    >
+                        {({ className, style, tokens, getLineProps, getTokenProps }) => (
+                            <code className={`${className} whitespace-pre`} style={style}>
+                                {tokens.map((line, i) => (
+                                    <span 
+                                        key={i} 
+                                        {...getLineProps({ line })}
+                                        className="token-line text-md leading-6 block"
+                                    >
+                                        {line.map((token, key) => (
+                                            <span key={key} {...getTokenProps({ token })} />
+                                        ))}
+                                    </span>
+                                ))}
+                            </code>
+                        )}
+                    </Highlight>
+                </pre>
+            </div>
         );
     }
 
@@ -96,28 +111,13 @@ export default function FormatResponse({ content }: { content: string }) {
                 {...props} 
             />
         ),
-        // Handle paragraphs containing code blocks
-        p: ({ children }) => {
-            const childArray = React.Children.toArray(children);
-            // Check if paragraph contains a code block
-            const hasCodeBlock = childArray.some(
-                child => React.isValidElement(child) && 
-                (child.props?.className?.includes('language-') || child.type === 'pre')
-            );
-            
-            // If it contains a code block, render without paragraph wrapper
-            if (hasCodeBlock) {
-                return <>{children}</>;
-            }
-            return <p>{children}</p>;
-        },
         code: CodeBlock as any,
     }), []);
 
     return (
         <div className="prose prose-pre:my-0 prose-pre:bg-transparent dark:prose-invert dark:bg-slate-700 dark:text-white rounded-lg p-4 max-w-[80%] shadow-md whitespace-normal">
             <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
+                remarkPlugins={[remarkGfm, remarkCodeBlocks]}
                 rehypePlugins={[rehypeSanitize]}
                 components={components}
             >
