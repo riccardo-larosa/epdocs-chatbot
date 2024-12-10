@@ -106,6 +106,7 @@ export default function FormatResponse({ content }: { content: string }) {
                 remarkPlugins={[remarkGfm, remarkCodeBlocks]}
                 rehypePlugins={[rehypeSanitize]}
                 components={components}
+                unwrapDisallowed={true}
             >
                 {content}
             </ReactMarkdown>
