@@ -12,6 +12,24 @@ export default {
         background: "var(--background)",
         foreground: "var(--foreground)",
       },
+      typography: {
+        DEFAULT: {
+          css: {
+            pre: {
+              padding: 0,
+              margin: 0,
+              backgroundColor: 'transparent',
+            },
+            'pre code': {
+              padding: '0',
+              verticalAlign: 'baseline',
+              whiteSpace: 'pre-wrap',
+              margin: '0',
+              display: 'inline',
+            },
+          },
+        },
+      },
     },
   },
   plugins: [
