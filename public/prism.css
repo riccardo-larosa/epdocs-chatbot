@@ -1,0 +1,17 @@
+/* Add this file to your public directory and import it in your _app.tsx or layout.tsx */
+code[class*="language-"],
+pre[class*="language-"] {
+    color: #000;
+    background: none;
+    font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+    text-align: left;
+    white-space: pre;
+    word-spacing: normal;
+    word-break: normal;
+    word-wrap: normal;
+    line-height: 1.5;
+    tab-size: 4;
+    hyphens: none;
+}
+
+/* Your preferred Prism theme styles here */ 
