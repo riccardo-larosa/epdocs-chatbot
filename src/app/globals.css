@@ -38,6 +38,10 @@
     @apply bg-gray-100 hover:bg-gray-200 text-gray-900 
            dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-100;
   }
+
+  * {
+    @apply transition-colors duration-200;
+  }
 }
 
 /* Add component-specific dark mode styles */
@@ -60,6 +64,79 @@
            prose-strong:text-gray-900 dark:prose-strong:text-white
            prose-code:text-gray-800 dark:prose-code:text-gray-200
            prose-pre:bg-gray-100 dark:prose-pre:bg-gray-900;
+
+    /* Prism.js theme customization */
+    & .prism-code {
+      @apply p-4 rounded-lg overflow-x-auto border border-gray-200 dark:border-gray-700
+             bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200;
+    }
+
+    /* Token colors for dark mode */
+    &.dark {
+      & .token.comment,
+      & .token.prolog,
+      & .token.doctype,
+      & .token.cdata {
+        @apply text-gray-400;
+      }
+
+      & .token.punctuation {
+        @apply text-gray-300;
+      }
+
+      & .token.property,
+      & .token.tag,
+      & .token.boolean,
+      & .token.number,
+      & .token.constant,
+      & .token.symbol,
+      & .token.deleted {
+        @apply text-red-300;
+      }
+
+      & .token.selector,
+      & .token.attr-name,
+      & .token.string,
+      & .token.char,
+      & .token.builtin,
+      & .token.inserted {
+        @apply text-green-300;
+      }
+
+      & .token.operator,
+      & .token.entity,
+      & .token.url,
+      & .language-css .token.string,
+      & .style .token.string {
+        @apply text-yellow-300;
+      }
+
+      & .token.atrule,
+      & .token.attr-value,
+      & .token.keyword {
+        @apply text-purple-300;
+      }
+
+      & .token.function,
+      & .token.class-name {
+        @apply text-blue-300;
+      }
+
+      & .token.regex,
+      & .token.important,
+      & .token.variable {
+        @apply text-orange-300;
+      }
+    }
+
+    /* Line numbers and highlighting */
+    & .line-number::before {
+      @apply text-gray-400 dark:text-gray-500 mr-4;
+    }
+
+    & .highlight-line {
+      @apply bg-gray-200 dark:bg-gray-700 -mx-4 px-4;
+    }
   }
 
   .input-field {
@@ -76,4 +153,239 @@
            shadow-sm hover:shadow-md
            transition-all duration-200;
   }
+}
+
+/* Add these styles to your existing globals.css */
+pre, .prose pre {
+  margin: 0;
+  padding: 0;
+  display: inline-flex; /* Ensure proper alignment */
+  background-color: transparent !important; /* Retain transparent background if needed */
+  white-space: pre-wrap; /* Allow wrapping without breaking whitespace */
+}
+
+
+/* Syntax highlighting styles */
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+    color: #637777;
+    font-style: italic;
+}
+
+.token.function {
+    color: #7c4dff;
+}
+
+.token.property,
+.token.tag,
+.token.boolean,
+.token.number,
+.token.constant,
+.token.symbol,
+.token.deleted {
+    color: #f92672;
+}
+
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+    color: #2ac3de;
+}
+
+.token.operator,
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string {
+    color: #ff9d00;
+}
+
+.token.atrule,
+.token.attr-value,
+.token.keyword {
+    color: #ff7b72;
+}
+
+.token.punctuation {
+    color: #88c6be;
+}
+
+/* Dark mode specific colors */
+.dark .token.function {
+    color: #7c91ff;
+}
+
+.dark .token.string {
+    color: #9ece6a;
+}
+
+.dark .token.keyword {
+    color: #9d7cd8;
+}
+
+.dark .token.comment {
+    color: #565f89;
+}
+
+.dark .token.property {
+    color: #f7768e;
+}
+
+/* Add these styles to your existing globals.css */
+@layer utilities {
+  .transition-all {
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .ease-out {
+    transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  .transform {
+    transform: translateZ(0);
+    will-change: transform;
+  }
+
+  /* Add smooth height animation */
+  .animate-height {
+    transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+  }
+}
+
+/* Optimize transitions */
+* {
+  @apply transition-colors duration-200;
+}
+
+/* Smooth content appearance */
+.prose {
+  @apply transition-all duration-500 ease-out;
+}
+
+.prose > * {
+  @apply transition-all duration-300;
+}
+
+/* Optimize performance */
+.prose pre,
+.prose code {
+  @apply transform;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: subpixel-antialiased;
+  background-color: transparent !important;
+  /* padding: 6px;
+  width: 100%; */
+}
+
+/* Basic syntax highlighting */
+pre code {
+  color: #24292e;
+}
+
+.dark pre code {
+  color: #e1e4e8;
+}
+
+pre code .keyword,
+pre code .function,
+pre code .class-name {
+  color: #d73a49;
+}
+
+pre code .string {
+  color: #032f62;
+}
+
+pre code .number {
+  color: #005cc5;
+}
+
+pre code .comment {
+  color: #6a737d;
+  font-style: italic;
+}
+
+/* Dark theme */
+.dark pre code .keyword,
+.dark pre code .function,
+.dark pre code .class-name {
+  color: #ff7b72;
+}
+
+.dark pre code .string {
+  color: #a5d6ff;
+}
+
+.dark pre code .number {
+  color: #79c0ff;
+}
+
+.dark pre code .comment {
+  color: #8b949e;
+}
+
+/* Add these to your existing styles */
+.hljs-dark {
+  @apply text-gray-100;
+}
+
+.hljs-light {
+  @apply text-gray-900;
+}
+
+.hljs-dark .hljs-keyword,
+.hljs-dark .hljs-selector-tag,
+.hljs-dark .hljs-subst {
+  @apply text-pink-400;
+}
+
+.hljs-dark .hljs-string,
+.hljs-dark .hljs-regexp,
+.hljs-dark .hljs-addition,
+.hljs-dark .hljs-attribute,
+.hljs-dark .hljs-meta-string {
+  @apply text-green-400;
+}
+
+.hljs-dark .hljs-built_in,
+.hljs-dark .hljs-class .hljs-title {
+  @apply text-blue-400;
+}
+
+.hljs-dark .hljs-comment,
+.hljs-dark .hljs-quote,
+.hljs-dark .hljs-deletion {
+  @apply text-gray-500;
+}
+
+.hljs-light .hljs-keyword,
+.hljs-light .hljs-selector-tag,
+.hljs-light .hljs-subst {
+  @apply text-pink-600;
+}
+
+.hljs-light .hljs-string,
+.hljs-light .hljs-regexp,
+.hljs-light .hljs-addition,
+.hljs-light .hljs-attribute,
+.hljs-light .hljs-meta-string {
+  @apply text-green-600;
+}
+
+.hljs-light .hljs-built_in,
+.hljs-light .hljs-class .hljs-title {
+  @apply text-blue-600;
+}
+
+.hljs-light .hljs-comment,
+.hljs-light .hljs-quote,
+.hljs-light .hljs-deletion {
+  @apply text-gray-600;
 }
