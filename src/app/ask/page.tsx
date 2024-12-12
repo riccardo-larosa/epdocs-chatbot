@@ -99,7 +99,7 @@ export default function Ask() {
           </div>
         </section>
       </div>
-      <div className="fixed bottom-0 w-full max-w-3xl bg-white dark:bg-[#1F2937] pt-6">
+      <div className="fixed bottom-0 w-full max-w-3xl   dark:bg-[#1F2937] pt-6">
         <form onSubmit={handleSubmit} className="flex flex-col justify-center items-center px-6">
           <div className={`w-full flex items-center p-2 mb-2 rounded-full shadow-xl 
               ${isLoading ? ' animate-pulse border-slate-600 border-4' : ' border-2 border-slate-700 '}`}>

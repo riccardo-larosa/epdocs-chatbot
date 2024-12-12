@@ -13,6 +13,8 @@ const PromptSuggestions = ({ onPromptClick }: { onPromptClick: (prompt: string) 
             "Provide an example of where to use a custom API",
             "How do I build a promotion for 20% off when the cart total is $100 using rule promotions?",
             "How can I add a custom attribute to a product?",
+            "How do I create a product via the API?",
+            "How do I create an account and account membership via the API?",
         ];
     }
 
