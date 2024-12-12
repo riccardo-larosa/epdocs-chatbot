@@ -18,6 +18,11 @@ hljs.registerLanguage('markdown', markdown);
 hljs.registerLanguage('jsx', javascript);
 hljs.registerLanguage('tsx', typescript);
 
+interface CodeProps extends React.HTMLAttributes<HTMLElement> {
+    inline?: boolean;
+    className?: string;
+}
+
 export default function FormatResponse({ content }: { content: string }) {
     return (
         <div className="prose dark:prose-invert bg-gray-50 dark:bg-gray-800 rounded-lg p-4 max-w-[80%] shadow-md whitespace-normal">
@@ -28,7 +33,7 @@ export default function FormatResponse({ content }: { content: string }) {
                     a: ({ ...props }) => (
                         <a className="text-emerald-600 hover:text-emerald-400 underline" target="_blank" {...props} />
                     ),
-                    code: ({ className, children, inline, ...props }) => {
+                    code: ({ className, children, inline, ...props }: CodeProps) => {
                         if (inline) {
                             return (
                                 <code className="inline-code" {...props}>
