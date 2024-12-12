@@ -65,11 +65,7 @@
            prose-code:text-gray-800 dark:prose-code:text-gray-200
            prose-pre:bg-gray-100 dark:prose-pre:bg-gray-900;
 
-    /* Prism.js theme customization */
-    & .prism-code {
-      @apply p-4 rounded-lg overflow-x-auto border border-gray-200 dark:border-gray-700
-             bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200;
-    }
+
 
     /* Token colors for dark mode */
     &.dark {
@@ -331,61 +327,66 @@ pre code .comment {
   color: #8b949e;
 }
 
-/* Add these to your existing styles */
-.hljs-dark {
-  @apply text-gray-100;
+/* Add these styles where appropriate in your CSS */
+pre {
+  padding: 1em;
+  border-radius: 0.5em;
+  overflow-x: auto;
 }
 
-.hljs-light {
-  @apply text-gray-900;
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.875em;
 }
 
-.hljs-dark .hljs-keyword,
-.hljs-dark .hljs-selector-tag,
-.hljs-dark .hljs-subst {
-  @apply text-pink-400;
+/* Add these styles for code blocks */
+.code-block {
+    @apply p-1 rounded !bg-slate-900 !text-gray-100;
 }
 
-.hljs-dark .hljs-string,
-.hljs-dark .hljs-regexp,
-.hljs-dark .hljs-addition,
-.hljs-dark .hljs-attribute,
-.hljs-dark .hljs-meta-string {
-  @apply text-green-400;
+.code-block-wrapper {
+    @apply !bg-slate-900 !text-gray-100 p-4 rounded-lg overflow-x-auto my-4;
 }
 
-.hljs-dark .hljs-built_in,
-.hljs-dark .hljs-class .hljs-title {
-  @apply text-blue-400;
+.code-block-wrapper code {
+    @apply !bg-transparent;
 }
 
-.hljs-dark .hljs-comment,
-.hljs-dark .hljs-quote,
-.hljs-dark .hljs-deletion {
-  @apply text-gray-500;
+/* Style for inline code */
+.prose :not(pre) > code {
+    @apply !bg-transparent font-mono text-pink-600 dark:text-pink-400;
+    /* Remove backticks */
+    &::before,
+    &::after {
+        content: "" !important;
+    }
 }
 
-.hljs-light .hljs-keyword,
-.hljs-light .hljs-selector-tag,
-.hljs-light .hljs-subst {
-  @apply text-pink-600;
+/* Code block styles */
+.code-block-wrapper {
+    @apply !bg-slate-900 !text-gray-100 p-4 rounded-lg overflow-x-auto my-4;
 }
 
-.hljs-light .hljs-string,
-.hljs-light .hljs-regexp,
-.hljs-light .hljs-addition,
-.hljs-light .hljs-attribute,
-.hljs-light .hljs-meta-string {
-  @apply text-green-600;
+.block-code {
+    @apply !bg-slate-900 !text-gray-100;
 }
 
-.hljs-light .hljs-built_in,
-.hljs-light .hljs-class .hljs-title {
-  @apply text-blue-600;
+/* Inline code styles */
+.inline-code,
+.prose :not(pre) > code {
+    @apply !bg-transparent font-mono text-pink-600 dark:text-pink-400;
+    &::before,
+    &::after {
+        content: "" !important;
+    }
 }
 
-.hljs-light .hljs-comment,
-.hljs-light .hljs-quote,
-.hljs-light .hljs-deletion {
-  @apply text-gray-600;
+/* Ensure code blocks inside pre maintain dark background and light text */
+pre.code-block-wrapper code {
+    @apply !bg-slate-900 !text-gray-100;
+}
+
+/* Override any theme-specific text colors for code blocks */
+.prose pre code {
+    @apply !text-gray-100 !bg-slate-900;
 }
