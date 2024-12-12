@@ -389,3 +389,15 @@ pre code .comment {
 .hljs-light .hljs-deletion {
   @apply text-gray-600;
 }
+
+/* Add these styles where appropriate in your CSS */
+pre {
+  padding: 1em;
+  border-radius: 0.5em;
+  overflow-x: auto;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.875em;
+}

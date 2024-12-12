@@ -1,111 +1,57 @@
 import ReactMarkdown from "react-markdown";
-import React, { useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import remarkGfm from 'remark-gfm';
 import rehypeSanitize from 'rehype-sanitize';
-import { Highlight, themes, Language } from 'prism-react-renderer';
-import { useTheme } from 'next-themes';
-import remarkCodeBlocks from '@/utils/remarkCodeBlocks';
+import rehypeHighlight from 'rehype-highlight';
+import hljs from 'highlight.js/lib/core';
+import typescript from 'highlight.js/lib/languages/typescript';
+import javascript from 'highlight.js/lib/languages/javascript';
+import bash from 'highlight.js/lib/languages/bash';
+import markdown from 'highlight.js/lib/languages/markdown';
+import 'highlight.js/styles/github.css';
+import 'highlight.js/styles/panda-syntax-dark.min.css';
 
-type CodeProps = {
-    className?: string;
-    children?: React.ReactNode;
-    inline?: boolean;
-} & React.HTMLProps<HTMLElement>;
-
-const getLanguage = (className: string | undefined): Language => {
-    const match = /language-(\w+)/.exec(className || '');
-    const lang = match ? match[1].toLowerCase() : '';
-    
-    // Convert common aliases
-    switch (lang) {
-        case 'sh':
-        case 'curl':
-            return 'bash';
-        case 'md':
-        case 'mdx':
-            return 'markdown';
-        case 'ts':
-        case 'tsx':
-            return 'typescript';
-        case 'js':
-        case 'jsx':
-            return 'javascript';
-        case 'json':
-            return 'json';
-        case 'http':
-            return 'http';
-        case 'py':
-            return 'python';
-        default:
-            return lang as Language || 'markdown';
-    }
-};
-
-const CodeBlock = React.memo(({ className, children, inline, ...props }: CodeProps) => {
-    const { resolvedTheme, theme } = useTheme();
-    const currentTheme = resolvedTheme || theme || 'light';
-    const language = getLanguage(className);
-
-    if (!inline && language) {
-        const code = String(children).replace(/\n$/, '');
-        
-        return (
-            <pre 
-                className="text-sm align-baseline"
-            >
-                <Highlight
-                    theme={currentTheme === 'dark' ? themes.vsDark : themes.vsLight}
-                    code={code}
-                    language={language}
-                >
-                    {({ className, style, tokens, getLineProps, getTokenProps }) => (
-                        <code className={`${className} whitespace-pre`} style={style}>
-                            {tokens.map((line, i) => (
-                                <span 
-                                    key={i} 
-                                    {...getLineProps({ line })}
-                                    className="token-line text-md leading-6 block"
-                                >
-                                    {line.map((token, key) => (
-                                        <span key={key} {...getTokenProps({ token })} />
-                                    ))}
-                                </span>
-                            ))}
-                        </code>
-                    )}
-                </Highlight>
-            </pre>
-        );
-    }
-
-    return (
-        <code className={`${className} bg-gray-100 dark:bg-gray-800 rounded px-1`} {...props}>
-            {children}
-        </code>
-    );
-});
-
-CodeBlock.displayName = 'CodeBlock';
+// Register the languages
+hljs.registerLanguage('typescript', typescript);
+hljs.registerLanguage('javascript', javascript);
+hljs.registerLanguage('bash', bash);
+hljs.registerLanguage('markdown', markdown);
+hljs.registerLanguage('jsx', javascript);
+hljs.registerLanguage('tsx', typescript);
 
 export default function FormatResponse({ content }: { content: string }) {
-    const components = useMemo(() => ({
-        a: ({ ...props }) => (
-            <a 
-                className="text-emerald-600 hover:text-emerald-400 underline" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                {...props} 
-            />
-        ),
-        code: CodeBlock as any,
-    }), []);
+    const [isDark, setIsDark] = useState(true);
+
+    useEffect(() => {
+        // Check if dark mode is enabled
+        const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        setIsDark(darkModeMediaQuery.matches);
+
+        // Listen for theme changes
+        const handleChange = (e: MediaQueryListEvent) => setIsDark(e.matches);
+        darkModeMediaQuery.addEventListener('change', handleChange);
+
+        return () => darkModeMediaQuery.removeEventListener('change', handleChange);
+    }, []);
 
     return (
-        <div className="prose prose-pre:my-0 prose-pre:bg-transparent dark:prose-invert dark:bg-slate-700 dark:text-white rounded-lg p-4 max-w-[80%] shadow-md whitespace-normal">
+        <div className={`prose ${isDark ? 'dark:bg-slate-700 dark:text-white' : 'bg-white text-black'} rounded-lg p-4 max-w-[80%] shadow-md whitespace-normal`}>
             <ReactMarkdown
-                remarkPlugins={[remarkGfm, remarkCodeBlocks]}
-                rehypePlugins={[rehypeSanitize]}
-                components={components}
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeSanitize, [rehypeHighlight, { detect: true, ignoreMissing: true }]]}
+                components={{
+                    a: ({ ...props }) => (
+                        <a className="text-emerald-600 hover:text-emerald-400 underline" target="_blank" {...props} />
+                    ),
+                    code: ({ className, children, ...props }) => {
+                        const codeClass = `${className} p-1 rounded ${isDark ? 'bg-gray-800 text-white' : 'bg-gray-200 text-black'}`;
+                        return (
+                            <code className={codeClass} {...props}>
+                                {children}
+                            </code>
+                        );
+                    }
+                }}
             >
                 {content}
             </ReactMarkdown>
