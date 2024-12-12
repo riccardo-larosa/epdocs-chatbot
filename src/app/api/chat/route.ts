@@ -23,6 +23,7 @@ export async function POST(request: Request) {
     
     let context = '';
     let systemPrompt = '';
+    let epccTools, epsmTools;
     let result: any;
 
     if (!useTools) {
@@ -44,8 +45,42 @@ export async function POST(request: Request) {
 
     if (site === 'EPCC') {
         systemPrompt = prompts.PROMPT_EPCC_DOCS_INTRO + prompts.PROMPT_EPCC_DOCS_WITH_TOOLS + prompts.PROMPT_EPCC_DOCS_OUTRO;
+        epccTools = {
+            getContent: tool({
+                description: 'get content from Elastic Path knowledge base',
+                parameters: z.object({
+                    latestMessage: z.string().describe('the users question'),
+                }),
+                execute: async ({ latestMessage }) => findRelevantContent(latestMessage),
+            }),
+            getTechnicalContent: tool({
+                description: 'get technical content, like API reference and code from Elastic Path API reference',
+                parameters: z.object({
+                    latestMessage: z.string().describe('the users question'),
+                }),
+                execute: async ({ latestMessage }) => findTechnicalContent(latestMessage),
+            }),
+            // execGetRequest: tool({
+            //     description: 'execute a GET request to the specified endpoint',
+            //     parameters: z.object({
+            //         endpoint: z.string().describe('the endpoint to call'),
+            //         token: z.string().describe('the token to use'),
+            //         params: z.record(z.string(), z.string()).describe('the parameters to pass to the endpoint'),
+            //     }),
+            //     execute: async ({ endpoint, token, params }) => execGetRequest(endpoint, token, params),
+            // }),
+        }
     } else {
         systemPrompt = prompts.PROMPT_EPSM_DOCS_INTRO + prompts.PROMPT_EPSM_DOCS_OUTRO;
+        epsmTools = {
+            getContent: tool({
+                description: 'get content from Elastic Path knowledge base',
+                parameters: z.object({
+                    latestMessage: z.string().describe('the users question'),
+                }),
+                execute: async ({ latestMessage }) => findRelevantContent(latestMessage),
+            }),
+        }
     }
     console.log(`systemPrompt: ${systemPrompt}`);
     // Start a new LLM span
@@ -59,31 +94,8 @@ export async function POST(request: Request) {
             ],
             //experimental_telemetry: AISDKExporter.getSettings(),
             maxSteps: 3,
-            tools: {
-                getContent: tool({
-                    description: 'get content from Elastic Path knowledge base',
-                    parameters: z.object({
-                        latestMessage: z.string().describe('the users question'),
-                    }),
-                    execute: async ({ latestMessage }) => findRelevantContent(latestMessage),
-                }),
-                getTechnicalContent: tool({
-                    description: 'get technical content, like API reference and code from Elastic Path API reference',
-                    parameters: z.object({
-                        latestMessage: z.string().describe('the users question'),
-                    }),
-                    execute: async ({ latestMessage }) => findTechnicalContent(latestMessage),
-                }),
-                // execGetRequest: tool({
-                //     description: 'execute a GET request to the specified endpoint',
-                //     parameters: z.object({
-                //         endpoint: z.string().describe('the endpoint to call'),
-                //         token: z.string().describe('the token to use'),
-                //         params: z.record(z.string(), z.string()).describe('the parameters to pass to the endpoint'),
-                //     }),
-                //     execute: async ({ endpoint, token, params }) => execGetRequest(endpoint, token, params),
-                // }),
-            },
+            tools: site === 'EPCC' ? epccTools : epsmTools,
+            toolChoice: 'auto',
             onFinish: ({ usage, text }) => {
                 const { promptTokens, completionTokens, totalTokens } = usage;
                 console.log(`markdown text: ${text}`);

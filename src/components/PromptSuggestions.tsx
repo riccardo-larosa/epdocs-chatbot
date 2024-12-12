@@ -4,7 +4,8 @@ const PromptSuggestions = ({ onPromptClick }: { onPromptClick: (prompt: string) 
     if (process.env.NEXT_PUBLIC_SITE?.includes('EPSM')) {
         prompts = [
             "What is included in version 8.6?",
-            
+            "What is Extension Point Framework and why would I use it?",
+            "How do I add an item to the cart using cortex?",
         ];
     } else {
         prompts = [
