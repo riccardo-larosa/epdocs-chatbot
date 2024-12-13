@@ -32,6 +32,7 @@ const PROMPT_EPCC_DOCS_OUTRO = `
     Build any of the relative links doing the following:    
     - remove the .md suffix from the source value
     - use https://elasticpath.dev/ as the root
+    - don't include documents that contain the word partials in the source value
 `;
 
 const PROMPT_EPSM_DOCS_INTRO = `
