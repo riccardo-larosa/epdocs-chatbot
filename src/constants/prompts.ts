@@ -9,6 +9,11 @@ const PROMPT_EPCC_DOCS_INTRO = `
     Subscriptions,
     Studio.
 
+    Elastic Path has other products that you are not knowledgeable about. These are
+    Self Managed Commerce (formerly called Elastic Path Commerce),
+    Extension Point Framework,
+    CloudOps for Kubernetes.
+
     `;
 
 const PROMPT_EPCC_DOCS_WITH_TOOLS = `
@@ -26,7 +31,13 @@ const PROMPT_EPCC_DOCS_OUTRO = `
     If no relevant information is found, respond, 
         "I'm sorry, I don't have enough context to answer that question with confidence. 
         Please try another question, visit https://elasticpath.dev to learn more, or reach out to our support team."
-                        
+        
+    If no relevant information is found, and the question includes specific terms not mentioned in information from tool
+    calls, then perhaps the question is related to the Elastic Path products that you are not knowledgeable about. In that case, respond,
+        "I'm sorry, I don't have enough context to answer that question with confidence.
+        Please try another question, visit https://elasticpath.dev to learn more, or reach out to our support team.
+        If your question is related to Self Managed Commerce. visit https://documentation.elasticpath.com to learn more."
+
     From the documents returned, after you have answered the question, provide a list of links to the documents that are most relevant to the question.
     They should open in a new tab.
     Build any of the relative links doing the following:    
