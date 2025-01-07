@@ -37,6 +37,12 @@ export default function Ask() {
     }
   }, [messages]);
 
+  useEffect(() => {
+    if (error) {
+      console.log('Chat error:', error);
+    }
+  }, [error]);
+
   return (
     <div className="relative w-full max-w-3xl mx-auto">
       <div className="flex flex-col w-full max-w-3xl px-6 pt-6 mx-auto stretch bg-[#F9FBFA] dark:bg-[#1F2937]">
