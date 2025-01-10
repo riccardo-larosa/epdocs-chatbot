@@ -68,11 +68,11 @@ export async function POST(request: Request) {
                 parameters: z.object({
                     endpoint: z.string().describe('the endpoint to call'),
                     token: z.string().describe('the token to use'),
-                    params: z.record(z.string(), z.string()).describe('the parameters to pass to the endpoint'),
+                    //params: z.record(z.string(), z.string()).describe('the parameters to pass to the endpoint'),
                 }),
-                execute: async ({ endpoint, token, params }) => {
-                    console.log(`calling execGetRequest: ${endpoint}, ${token}, ${JSON.stringify(params)}`);
-                    return execGetRequest(endpoint, token, params);
+                execute: async ({ endpoint, token }) => {
+                    console.log(`calling execGetRequest: ${endpoint}, ${token}}`);
+                    return execGetRequest(endpoint, token);
                 },
             }), 
             // execPostRequest: tool({

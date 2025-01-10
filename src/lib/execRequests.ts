@@ -16,10 +16,11 @@ function getBaseurl() {
 export async function execGetRequest(
   endpoint: string,
   token: string,
-  params?: Record<string, any>,
-  baseurl: string = getBaseurl()
+  params: Record<string, any> = {},
+  //baseurl: string = getBaseurl()
 ): Promise<any> {
   try {
+    const baseurl = getBaseurl();
     console.log(`calling execGetRequest: ${baseurl + endpoint}`);
     console.log(`params: ${JSON.stringify(params)}`);
     console.log(`headers: ${JSON.stringify(createHeaders(token))}`);
@@ -27,7 +28,7 @@ export async function execGetRequest(
   const response = await fetch(baseurl + endpoint, {
     method: 'GET',
     headers: createHeaders(token),
-    ...params && { search: new URLSearchParams(params).toString() }
+    ..params && { search: new URLSearchParams(params).toString() }
   });
 
     if (!response.ok) {
