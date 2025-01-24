@@ -1,7 +1,7 @@
-import { streamText, tool } from 'ai';
+import { InvalidToolArgumentsError, NoSuchToolError, ToolExecutionError, streamText, tool } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { findRelevantContent, findTechnicalContent } from '@/lib/mongoDbRetriever';
-// import { execGetRequest } from '@/lib/execRequests';
+import { execGetRequest, execPostRequest } from '@/lib/execRequests';
 import { z } from 'zod';
 // import { AISDKExporter } from 'langsmith/vercel';
 import { llmobs } from 'dd-trace';
@@ -10,16 +10,14 @@ import * as prompts from '@/constants/prompts';
 export async function POST(request: Request) {
 
     const { messages, useTools } = await request.json();
-    console.log(`useTools: ${useTools}`);
+    // console.log(`useTools: ${useTools}`);
     const latestMessage = messages[messages?.length - 1]?.content;
-    console.log(`latestMessage: ${latestMessage}`);
     const site = process.env.NEXT_PUBLIC_SITE;
-    console.log(`site: ${site}`);
 
-    console.log('messages:-------------------');
-    messages?.map((msg: any) => (
-        console.log(`role: ${msg.role}, content: ${msg.content ? msg.content.slice(0, 100) + '...' : 'undefined'}`)
-    ));
+    // console.log('messages:-------------------');
+    // messages?.map((msg: any) => (
+    //     console.log(`role: ${msg.role}, content: ${msg.content ? msg.content.slice(0, 100) + '...' : 'undefined'}`)
+    // ));
     
     let context = '';
     let systemPrompt = '';
@@ -60,14 +58,29 @@ export async function POST(request: Request) {
                 }),
                 execute: async ({ latestMessage }) => findTechnicalContent(latestMessage),
             }),
-            // execGetRequest: tool({
-            //     description: 'execute a GET request to the specified endpoint',
+            execGetRequest: tool({
+                description: 'execute a GET request to the specified endpoint once you know the endpoint, token and params. \
+                         If you need to get the endpoint, and params, use the getTechnicalContent tool first. \
+                         The token needs to be a valid bearer token for the Elastic Path API. \
+                         If the token is not included in the tool call, don\'t execute the call and ask for the token first.',
+                parameters: z.object({
+                    endpoint: z.string().describe('the endpoint to call'),
+                    token: z.string().describe('the token to use'),
+                    params: z.record(z.string(), z.string()).optional().describe('the parameters to pass to the endpoint'),
+                }),
+                execute: async ({ endpoint, token, params }) => {
+                    console.log(`calling execGetRequest: ${endpoint}, ${token}, ${JSON.stringify(params)}`);
+                    return execGetRequest(endpoint, token, params);
+                },
+            }), 
+            // execPostRequest: tool({
+            //     description: 'execute a POST request to the specified endpoint',
             //     parameters: z.object({
             //         endpoint: z.string().describe('the endpoint to call'),
             //         token: z.string().describe('the token to use'),
-            //         params: z.record(z.string(), z.string()).describe('the parameters to pass to the endpoint'),
+            //         body: z.any().describe('the body to pass to the endpoint'),
             //     }),
-            //     execute: async ({ endpoint, token, params }) => execGetRequest(endpoint, token, params),
+            //     execute: async ({ endpoint, token, body }) => execPostRequest(endpoint, token, body),
             // }),
         }
     } else {
@@ -82,23 +95,24 @@ export async function POST(request: Request) {
             }),
         }
     }
-    console.log(`systemPrompt: ${systemPrompt}`);
+    //console.log(`systemPrompt: ${systemPrompt}`);
     // Start a new LLM span
     //llmobs.wrap({ kind: 'tool' }, findRelevantContent);
 
-    result = streamText({
-            model: openai('gpt-4o'),
-            messages: [
+    try {
+        result = streamText({
+                model: openai('gpt-4o'),
+                messages: [
                 { role: "system", content: systemPrompt },
                 ...messages
             ],
             //experimental_telemetry: AISDKExporter.getSettings(),
-            maxSteps: 3,
+            maxSteps: 10,
             tools: site === 'EPCC' ? epccTools : epsmTools,
             toolChoice: 'auto',
             onFinish: ({ usage, text }) => {
                 const { promptTokens, completionTokens, totalTokens } = usage;
-                console.log(`markdown text: ${text}`);
+                // console.log(`markdown text: ${text}`);
                 console.log('Prompt tokens:', promptTokens);
                 console.log('Completion tokens:', completionTokens);
                 console.log('Total tokens:', totalTokens);
@@ -111,8 +125,31 @@ export async function POST(request: Request) {
                     })
                 })
             },
+            onStepFinish: (step) => {
+                // console.log(`step: ${JSON.stringify(step.toolCalls)}`);
+            }
         });
 
-    return result.toDataStreamResponse();
+        return result.toDataStreamResponse({
+            getErrorMessage: (error: any) => {
+                if (NoSuchToolError.isInstance(error)) {
+                  return 'The model tried to call a unknown tool.';
+                } else if (InvalidToolArgumentsError.isInstance(error)) {
+                    console.log(`InvalidToolArgumentsError: ${error.toolName} with arguments: ${error.toolArgs}`);
+                  return 'The model called a tool with invalid arguments.';
+                } else if (ToolExecutionError.isInstance(error)) {
+                  return `An error occurred during tool execution: ${error.message}`;
+                } else {
+                  return 'An unknown error occurred.';
+                }
+              },
+        });
+
+    } catch (error) {
+        console.error('Error in streamText:', error);
+        throw error;
+    }
+
+    
 
 }

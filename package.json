@@ -16,7 +16,7 @@
     "@tailwindcss/typography": "^0.5.15",
     "@types/prismjs": "^1.26.5",
     "@vercel/otel": "^1.10.0",
-    "ai": "^4.0.0",
+    "ai": "^4.0.30",
     "dd-trace": "^5.26.0",
     "dotenv": "^16.4.5",
     "highlight.js": "^11.10.0",
