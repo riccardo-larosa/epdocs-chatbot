@@ -9,6 +9,10 @@ import EpIcon from '@/components/icons/EpIcon';
 import React from 'react';
 import FormatResponse from '@/components/FormatResponse';
 
+interface ChatError extends Error {
+  cause: Error ;
+}
+
 export default function Ask() {
   const { messages, input, handleInputChange, handleSubmit, error, append, isLoading } = useChat(
     { api: '/api/chat',
@@ -102,10 +106,10 @@ export default function Ask() {
                           </div>
                           <div className="bg-red-50 dark:bg-red-900/50 rounded-lg p-4 max-w-[80%] text-red-800 dark:text-red-200">
                             <p className="font-semibold mb-1">Error</p>
-                            <p className="text-sm">{error.message}</p>
-                            {error.cause && (
+                            <p className="text-sm">{(error as ChatError).message}</p>
+                            {(error as ChatError).cause && (
                               <p className="text-sm mt-2 text-red-700 dark:text-red-300">
-                                Reason: {error.cause.toString()}
+                                Reason: {(error as ChatError).cause instanceof Error ? (error as ChatError).cause.message : String((error as ChatError).cause)}
                               </p>
                             )}
                             <p className="text-xs mt-2 text-red-600 dark:text-red-400">

@@ -1,7 +1,7 @@
 import { InvalidToolArgumentsError, NoSuchToolError, ToolExecutionError, streamText, tool } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { findRelevantContent, findTechnicalContent } from '@/lib/mongoDbRetriever';
-import { execGetRequest, execPostRequest } from '@/lib/execRequests';
+import { execGetRequest } from '@/lib/execRequests';
 import { z } from 'zod';
 // import { AISDKExporter } from 'langsmith/vercel';
 import { llmobs } from 'dd-trace';
@@ -125,9 +125,9 @@ export async function POST(request: Request) {
                     })
                 })
             },
-            onStepFinish: (step) => {
-                // console.log(`step: ${JSON.stringify(step.toolCalls)}`);
-            }
+            // onStepFinish: (step) => {
+            //     // console.log(`step: ${JSON.stringify(step.toolCalls)}`);
+            // }
         });
 
         return result.toDataStreamResponse({
