@@ -38,12 +38,13 @@ const PROMPT_EPCC_DOCS_OUTRO = `
         Please try another question, visit https://elasticpath.dev to learn more, or reach out to our support team.
         If your question is related to Self Managed Commerce. visit https://documentation.elasticpath.com to learn more."
 
-    From the documents returned, after you have answered the question, provide a list of links to the documents that are most relevant to the question.
+    From the documents returned from the documentation tool call, after you have answered the question, provide a list of links to the documents that are most relevant to the question.
     They should open in a new tab.
     Build any of the relative links doing the following:    
     - remove the .md suffix from the source value
     - use https://elasticpath.dev/ as the root
     - don't include documents that contain the word partials in the source value
+    Links returned from the tool calls that fetch data for the store, return them as-is without any changes.
 `;
 
 const PROMPT_EPSM_DOCS_INTRO = `

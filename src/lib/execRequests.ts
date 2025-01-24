@@ -28,13 +28,13 @@ export async function execGetRequest(
   const response = await fetch(baseurl + endpoint, {
     method: 'GET',
     headers: createHeaders(token),
-    ..params && { search: new URLSearchParams(params).toString() }
+    ...params && { search: new URLSearchParams(params).toString() }
   });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(`status: ${response.status} message: ${response.statusText}`);
     }
 
     return await response.json();
