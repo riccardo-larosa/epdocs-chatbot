@@ -21,9 +21,9 @@ export async function execGetRequest(
 ): Promise<any> {
   try {
     const baseurl = getBaseurl();
-    console.log(`calling execGetRequest: ${baseurl + endpoint}`);
-    console.log(`params: ${JSON.stringify(params)}`);
-    console.log(`headers: ${JSON.stringify(createHeaders(token))}`);
+    // console.log(`calling execGetRequest: ${baseurl + endpoint}`);
+    // console.log(`params: ${JSON.stringify(params)}`);
+    // console.log(`headers: ${JSON.stringify(createHeaders(token))}`);
 
   const response = await fetch(baseurl + endpoint, {
     method: 'GET',
@@ -32,7 +32,7 @@ export async function execGetRequest(
   });
 
     if (!response.ok) {
-      const errorText = await response.text();
+      // const errorText = await response.text();
       // console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
       throw new Error(`status: ${response.status} message: ${response.statusText}`);
     }
