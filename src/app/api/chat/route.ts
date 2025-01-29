@@ -1,7 +1,7 @@
 import { InvalidToolArgumentsError, NoSuchToolError, ToolExecutionError, streamText, tool } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { findRelevantContent, findTechnicalContent } from '@/lib/mongoDbRetriever';
-import { execGetRequest, execPostRequest } from '@/lib/execRequests';
+import { execGetRequest, execPostRequest, execPutRequest } from '@/lib/execRequests';
 import { z } from 'zod';
 // import { AISDKExporter } from 'langsmith/vercel';
 import { llmobs } from 'dd-trace';
@@ -84,8 +84,11 @@ export async function POST(request: Request) {
                     try {
                         const result = await execGetRequest(endpoint, token, params);
                         return result || { message: "Request completed but no data returned" };
-                    } catch (error) {
-                        return { error: error.message || "Request failed" };
+                    } catch (error: unknown) {
+                        if (error instanceof Error) {
+                            return { error: error.message };
+                        }
+                        return { error: "Request failed" };
                     }
                 },
             }), 
@@ -100,6 +103,18 @@ export async function POST(request: Request) {
                     body: z.any().describe('the body to pass to the endpoint'),
                 }),
                 execute: async ({ endpoint, token, body }) => execPostRequest(endpoint, token, body),
+            }),
+            execPutRequest: tool({
+                description: 'execute a PUT request to the specified endpoint once you know the endpoint, token and params. \
+                         If you need to get the endpoint, and params, use the getTechnicalContent tool first. \
+                         The token needs to be a valid bearer token for the Elastic Path API. \
+                         If the token is not included in the tool call, don\'t execute the call and ask for the token first.',
+                parameters: z.object({
+                    endpoint: z.string().describe('the endpoint to call'),
+                    token: z.string().describe('the token to use'),
+                    body: z.any().describe('the body to pass to the endpoint'),
+                }),
+                execute: async ({ endpoint, token, body }) => execPutRequest(endpoint, token, body),
             }),
         }
     } else {

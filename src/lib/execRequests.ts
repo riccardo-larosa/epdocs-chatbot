@@ -76,8 +76,9 @@ export async function execPutRequest(
   endpoint: string,
   token: string,
   body: any,
-  baseurl: string = getBaseurl()
+  // baseurl: string = getBaseurl()
 ): Promise<any> {
+  const baseurl = getBaseurl();
   const response = await fetch(baseurl + endpoint, {
     method: 'PUT',
     headers: createHeaders(token),
@@ -85,7 +86,7 @@ export async function execPutRequest(
   });
 
   if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
+    throw new Error(`HTTP error! status: ${response.status} message: ${response.statusText}`);
   }
 
   return await response.json();
