@@ -1,7 +1,7 @@
 import { InvalidToolArgumentsError, NoSuchToolError, ToolExecutionError, streamText, tool } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { findRelevantContent, findTechnicalContent } from '@/lib/mongoDbRetriever';
-import { execGetRequest } from '@/lib/execRequests';
+import { execGetRequest, execPostRequest, execPutRequest } from '@/lib/execRequests';
 import { z } from 'zod';
 // import { AISDKExporter } from 'langsmith/vercel';
 import { llmobs } from 'dd-trace';
@@ -49,14 +49,26 @@ export async function POST(request: Request) {
                 parameters: z.object({
                     latestMessage: z.string().describe('the users question'),
                 }),
-                execute: async ({ latestMessage }) => findRelevantContent(latestMessage),
+                execute: async ({ latestMessage }) => {
+                    const content = await findRelevantContent(latestMessage);
+                    if (!content || content.length === 0) {
+                        return { content: "No relevant content found." };
+                    }
+                    return content;
+                },
             }),
             getTechnicalContent: tool({
                 description: 'get technical content, like API reference and code from Elastic Path API reference',
                 parameters: z.object({
                     latestMessage: z.string().describe('the users question'),
                 }),
-                execute: async ({ latestMessage }) => findTechnicalContent(latestMessage),
+                execute: async ({ latestMessage }) => {
+                    const content = await findTechnicalContent(latestMessage);
+                    if (!content || content.length === 0) {
+                        return { content: "No technical content found." };
+                    }
+                    return content;
+                },
             }),
             execGetRequest: tool({
                 description: 'execute a GET request to the specified endpoint once you know the endpoint, token and params. \
@@ -69,19 +81,41 @@ export async function POST(request: Request) {
                     params: z.record(z.string(), z.string()).optional().describe('the parameters to pass to the endpoint'),
                 }),
                 execute: async ({ endpoint, token, params }) => {
-                    console.log(`calling execGetRequest: ${endpoint}, ${token}, ${JSON.stringify(params)}`);
-                    return execGetRequest(endpoint, token, params);
+                    try {
+                        const result = await execGetRequest(endpoint, token, params);
+                        return result || { message: "Request completed but no data returned" };
+                    } catch (error: unknown) {
+                        if (error instanceof Error) {
+                            return { error: error.message };
+                        }
+                        return { error: "Request failed" };
+                    }
                 },
             }), 
-            // execPostRequest: tool({
-            //     description: 'execute a POST request to the specified endpoint',
-            //     parameters: z.object({
-            //         endpoint: z.string().describe('the endpoint to call'),
-            //         token: z.string().describe('the token to use'),
-            //         body: z.any().describe('the body to pass to the endpoint'),
-            //     }),
-            //     execute: async ({ endpoint, token, body }) => execPostRequest(endpoint, token, body),
-            // }),
+            execPostRequest: tool({
+                description: 'execute a POST request to the specified endpoint once you know the endpoint, token and params. \
+                         If you need to get the endpoint, and params, use the getTechnicalContent tool first. \
+                         The token needs to be a valid bearer token for the Elastic Path API. \
+                         If the token is not included in the tool call, don\'t execute the call and ask for the token first.',
+                parameters: z.object({
+                    endpoint: z.string().describe('the endpoint to call'),
+                    token: z.string().describe('the token to use'),
+                    body: z.any().describe('the body to pass to the endpoint'),
+                }),
+                execute: async ({ endpoint, token, body }) => execPostRequest(endpoint, token, body),
+            }),
+            execPutRequest: tool({
+                description: 'execute a PUT request to the specified endpoint once you know the endpoint, token and params. \
+                         If you need to get the endpoint, and params, use the getTechnicalContent tool first. \
+                         The token needs to be a valid bearer token for the Elastic Path API. \
+                         If the token is not included in the tool call, don\'t execute the call and ask for the token first.',
+                parameters: z.object({
+                    endpoint: z.string().describe('the endpoint to call'),
+                    token: z.string().describe('the token to use'),
+                    body: z.any().describe('the body to pass to the endpoint'),
+                }),
+                execute: async ({ endpoint, token, body }) => execPutRequest(endpoint, token, body),
+            }), 
         }
     } else {
         systemPrompt = prompts.PROMPT_EPSM_DOCS_INTRO + prompts.PROMPT_EPSM_DOCS_OUTRO;

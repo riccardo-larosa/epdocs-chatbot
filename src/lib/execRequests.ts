@@ -32,8 +32,6 @@ export async function execGetRequest(
   });
 
     if (!response.ok) {
-      // const errorText = await response.text();
-      // console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
       throw new Error(`status: ${response.status} message: ${response.statusText}`);
     }
 
@@ -48,9 +46,10 @@ export async function execPostRequest(
   endpoint: string,
   token: string,
   body: any,
-  baseurl: string = getBaseurl()
+  // baseurl: string = getBaseurl()
 ): Promise<any> {
   try {
+    const baseurl = getBaseurl();
     console.log(`calling execPostRequest: ${baseurl + endpoint}`);
     console.log(`body: ${JSON.stringify(body)}`);
     console.log(`headers: ${JSON.stringify(createHeaders(token))}`);
@@ -61,9 +60,9 @@ export async function execPostRequest(
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // const errorText = await response.text();
+      // console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(`HTTP error! status: ${response.status}  message: ${response.statusText}`);
     }
 
     return await response.json();
@@ -77,8 +76,9 @@ export async function execPutRequest(
   endpoint: string,
   token: string,
   body: any,
-  baseurl: string = getBaseurl()
+  // baseurl: string = getBaseurl()
 ): Promise<any> {
+  const baseurl = getBaseurl();
   const response = await fetch(baseurl + endpoint, {
     method: 'PUT',
     headers: createHeaders(token),
@@ -86,7 +86,7 @@ export async function execPutRequest(
   });
 
   if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
+    throw new Error(`HTTP error! status: ${response.status} message: ${response.statusText}`);
   }
 
   return await response.json();
