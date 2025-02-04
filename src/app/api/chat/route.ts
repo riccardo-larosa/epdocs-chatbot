@@ -115,7 +115,7 @@ export async function POST(request: Request) {
                     body: z.any().describe('the body to pass to the endpoint'),
                 }),
                 execute: async ({ endpoint, token, body }) => execPutRequest(endpoint, token, body),
-            }),
+            }), 
         }
     } else {
         systemPrompt = prompts.PROMPT_EPSM_DOCS_INTRO + prompts.PROMPT_EPSM_DOCS_OUTRO;
