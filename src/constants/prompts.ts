@@ -60,13 +60,7 @@ const PROMPT_EPSM_DOCS_OUTRO = `
                                 
     From the documents returned, after you have answered the question, provide a list of links to the documents that are most relevant to the question.
     They should open in a new tab.
-    Build any of the relative links doing the following:
-    - remove the website/versioned_docs/ prefix
-    - replace the .md suffix with .html
-    - replace spaces with hyphens
-    - replace /version-N.M.x/ with /N.M.x/ for everything except /version-8.6.x/
-    - remove /version-8.6.x/ if it exists
-    - use https://documentation.elasticpath.com/commerce/docs as the root
+    
 `;
 
 export {
