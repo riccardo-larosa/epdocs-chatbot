@@ -6,6 +6,8 @@ const PromptSuggestions = ({ onPromptClick }: { onPromptClick: (prompt: string) 
             "What is included in version 8.6?",
             "What is Extension Point Framework and why would I use it?",
             "How do I add an item to the cart using cortex?",
+            "How do I create a new Commerce Manager user?",
+            "What authentication methods are supported by Cortex?"
         ];
     } else {
         prompts = [
