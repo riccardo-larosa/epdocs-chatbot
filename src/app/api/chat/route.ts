@@ -50,11 +50,24 @@ export async function POST(request: Request) {
             );
         }
 
-        // 2. API key validation (if required)
+        // 2. API key validation (if required for external API access)
         const apiKey = request.headers.get('authorization')?.replace('Bearer ', '');
-        if (process.env.REQUIRE_API_KEY === 'true' && !validateApiKey(apiKey || '')) {
+        const origin = request.headers.get('origin');
+        const referer = request.headers.get('referer');
+        
+        // Check if this is a request from the hosted UI
+        const hostedDomain = process.env.NEXT_PUBLIC_VERCEL_URL || 'localhost:3000';
+        const isHostedUI = (origin && (origin.includes(hostedDomain) || origin.includes('localhost'))) ||
+                          (referer && (referer.includes('/ask') || referer.includes(hostedDomain) || referer.includes('localhost'))) ||
+                          (!origin && !referer); // Direct server-side requests
+        
+        // Only require API key for external API access, not for the hosted chatbot UI
+        if (process.env.REQUIRE_API_KEY === 'true' && !isHostedUI && !validateApiKey(apiKey || '')) {
             return new Response(
-                JSON.stringify({ error: 'Unauthorized' }),
+                JSON.stringify({ 
+                    error: 'API key required for external access',
+                    message: 'This endpoint requires an API key when accessed from external applications. The hosted chatbot interface does not require an API key.'
+                }),
                 {
                     status: 401,
                     headers: {
