@@ -56,10 +56,47 @@ export async function POST(request: Request) {
         const referer = request.headers.get('referer');
         
         // Check if this is a request from the hosted UI
-        const hostedDomain = process.env.NEXT_PUBLIC_VERCEL_URL || 'localhost:3000';
-        const isHostedUI = (origin && (origin.includes(hostedDomain) || origin.includes('localhost'))) ||
-                          (referer && (referer.includes('/ask') || referer.includes(hostedDomain) || referer.includes('localhost'))) ||
-                          (!origin && !referer); // Direct server-side requests
+        const hostedDomains = [
+            process.env.NEXT_PUBLIC_VERCEL_URL || '',
+            // Allow additional hosted domains via environment variable
+            ...(process.env.HOSTED_DOMAINS?.split(',') || []),
+            // Default local development domains
+            'localhost:3000',
+            'localhost:3001',
+            '127.0.0.1:3000',
+            // Fallback for known Elastic Path domains
+            'chat.elasticpath.dev',
+            'chat-smc-elasticpath.dev',
+        ].filter(Boolean); // Remove empty strings
+        
+        const isHostedUI = 
+            // Check origin against all hosted domains
+            (origin && hostedDomains.some(domain => 
+                origin.includes(domain) || 
+                origin.includes('localhost') ||
+                origin.includes('127.0.0.1')
+            )) ||
+            // Check referer for /ask path or hosted domains
+            (referer && (
+                referer.includes('/ask') || 
+                hostedDomains.some(domain => referer.includes(domain)) ||
+                referer.includes('localhost') ||
+                referer.includes('127.0.0.1')
+            )) ||
+            // Direct server-side requests (no origin/referer)
+            (!origin && !referer);
+        
+        // Debug logging for troubleshooting
+        if (process.env.NODE_ENV === 'development' || process.env.DEBUG_AUTH === 'true') {
+            console.log('Auth Debug:', {
+                origin,
+                referer,
+                hostedDomains,
+                isHostedUI,
+                requireApiKey: process.env.REQUIRE_API_KEY,
+                hasApiKey: !!apiKey
+            });
+        }
         
         // Only require API key for external API access, not for the hosted chatbot UI
         if (process.env.REQUIRE_API_KEY === 'true' && !isHostedUI && !validateApiKey(apiKey || '')) {
