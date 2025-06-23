@@ -26,7 +26,6 @@ export function checkRateLimit(
   config: RateLimitConfig = { windowMs: 60000, maxRequests: 10 }
 ): RateLimitResult {
   const now = Date.now();
-  const windowStart = now - config.windowMs;
   
   // Clean up old entries
   for (const [key, value] of rateLimitStore.entries()) {
