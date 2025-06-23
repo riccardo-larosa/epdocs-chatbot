@@ -1,27 +1,100 @@
-import { InvalidToolArgumentsError, NoSuchToolError, ToolExecutionError, streamText, tool } from 'ai';
+import { streamText, tool } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { findRelevantContent, findTechnicalContent } from '@/lib/mongoDbRetriever';
-import { execGetRequest, execPostRequest, execPutRequest } from '@/lib/execRequests';
+// import { execGetRequest } from '@/lib/execRequests';
 import { z } from 'zod';
 // import { AISDKExporter } from 'langsmith/vercel';
 import { llmobs } from 'dd-trace';
 import * as prompts from '@/constants/prompts';
+import { 
+  getClientIP, 
+  checkRateLimit, 
+  validateApiKey, 
+  getCorsHeaders, 
+  validateChatRequest 
+} from '@/lib/apiSecurity';
+
+// Handle CORS preflight requests
+export async function OPTIONS(request: Request) {
+    const corsHeaders = getCorsHeaders(request);
+    return new Response(null, { status: 200, headers: corsHeaders });
+}
 
 export async function POST(request: Request) {
+    const corsHeaders = getCorsHeaders(request);
 
-    const { messages, useTools } = await request.json();
-    // console.log(`useTools: ${useTools}`);
+    try {
+        // 1. Rate limiting
+        const clientIP = getClientIP(request);
+        const rateLimitResult = checkRateLimit(clientIP, {
+            windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000'),
+            maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '10')
+        });
+
+        if (!rateLimitResult.success) {
+            return new Response(
+                JSON.stringify({ 
+                    error: 'Rate limit exceeded',
+                    resetTime: rateLimitResult.resetTime 
+                }),
+                {
+                    status: 429,
+                    headers: {
+                        ...corsHeaders,
+                        'Content-Type': 'application/json',
+                        'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+                        'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+                        'X-RateLimit-Reset': rateLimitResult.resetTime.toString(),
+                    },
+                }
+            );
+        }
+
+        // 2. API key validation (if required)
+        const apiKey = request.headers.get('authorization')?.replace('Bearer ', '');
+        if (process.env.REQUIRE_API_KEY === 'true' && !validateApiKey(apiKey || '')) {
+            return new Response(
+                JSON.stringify({ error: 'Unauthorized' }),
+                {
+                    status: 401,
+                    headers: {
+                        ...corsHeaders,
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
+        }
+
+        // 3. Request validation
+        const body = await request.json();
+        const validation = validateChatRequest(body);
+        if (!validation.valid) {
+            return new Response(
+                JSON.stringify({ error: validation.error }),
+                {
+                    status: 400,
+                    headers: {
+                        ...corsHeaders,
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
+        }
+
+        const { messages, useTools } = body;
+    console.log(`useTools: ${useTools}`);
     const latestMessage = messages[messages?.length - 1]?.content;
+    console.log(`latestMessage: ${latestMessage}`);
     const site = process.env.NEXT_PUBLIC_SITE;
+    console.log(`site: ${site}`);
 
-    // console.log('messages:-------------------');
-    // messages?.map((msg: any) => (
-    //     console.log(`role: ${msg.role}, content: ${msg.content ? msg.content.slice(0, 100) + '...' : 'undefined'}`)
-    // ));
+    console.log('messages:-------------------');
+    messages?.map((msg: any) => (
+        console.log(`role: ${msg.role}, content: ${msg.content ? msg.content.slice(0, 100) + '...' : 'undefined'}`)
+    ));
     
     let context = '';
     let systemPrompt = '';
-    let epccTools, epsmTools;
     let result: any;
 
     if (!useTools) {
@@ -38,115 +111,61 @@ export async function POST(request: Request) {
             // experimental_telemetry: AISDKExporter.getSettings(),
         });
 
-        return result.toDataStreamResponse();
+        const response = result.toDataStreamResponse();
+        
+        // Add CORS headers to streaming response
+        Object.entries(corsHeaders).forEach(([key, value]) => {
+            response.headers.set(key, value);
+        });
+        
+        return response;
     }
 
     if (site === 'EPCC') {
         systemPrompt = prompts.PROMPT_EPCC_DOCS_INTRO + prompts.PROMPT_EPCC_DOCS_WITH_TOOLS + prompts.PROMPT_EPCC_DOCS_OUTRO;
-        epccTools = {
-            getContent: tool({
-                description: 'get content from Elastic Path knowledge base',
-                parameters: z.object({
-                    latestMessage: z.string().describe('the users question'),
-                }),
-                execute: async ({ latestMessage }) => {
-                    const content = await findRelevantContent(latestMessage);
-                    if (!content || content.length === 0) {
-                        return { content: "No relevant content found." };
-                    }
-                    return content;
-                },
-            }),
-            getTechnicalContent: tool({
-                description: 'get technical content, like API reference and code from Elastic Path API reference',
-                parameters: z.object({
-                    latestMessage: z.string().describe('the users question'),
-                }),
-                execute: async ({ latestMessage }) => {
-                    const content = await findTechnicalContent(latestMessage);
-                    if (!content || content.length === 0) {
-                        return { content: "No technical content found." };
-                    }
-                    return content;
-                },
-            }),
-            execGetRequest: tool({
-                description: 'execute a GET request to the specified endpoint once you know the endpoint, token and params. \
-                         If you need to get the endpoint, and params, use the getTechnicalContent tool first. \
-                         The token needs to be a valid bearer token for the Elastic Path API. \
-                         If the token is not included in the tool call, don\'t execute the call and ask for the token first.',
-                parameters: z.object({
-                    endpoint: z.string().describe('the endpoint to call'),
-                    token: z.string().describe('the token to use'),
-                    params: z.record(z.string(), z.string()).optional().describe('the parameters to pass to the endpoint'),
-                }),
-                execute: async ({ endpoint, token, params }) => {
-                    try {
-                        const result = await execGetRequest(endpoint, token, params);
-                        return result || { message: "Request completed but no data returned" };
-                    } catch (error: unknown) {
-                        if (error instanceof Error) {
-                            return { error: error.message };
-                        }
-                        return { error: "Request failed" };
-                    }
-                },
-            }), 
-            execPostRequest: tool({
-                description: 'execute a POST request to the specified endpoint once you know the endpoint, token and params. \
-                         If you need to get the endpoint, and params, use the getTechnicalContent tool first. \
-                         The token needs to be a valid bearer token for the Elastic Path API. \
-                         If the token is not included in the tool call, don\'t execute the call and ask for the token first.',
-                parameters: z.object({
-                    endpoint: z.string().describe('the endpoint to call'),
-                    token: z.string().describe('the token to use'),
-                    body: z.any().describe('the body to pass to the endpoint'),
-                }),
-                execute: async ({ endpoint, token, body }) => execPostRequest(endpoint, token, body),
-            }),
-            execPutRequest: tool({
-                description: 'execute a PUT request to the specified endpoint once you know the endpoint, token and params. \
-                         If you need to get the endpoint, and params, use the getTechnicalContent tool first. \
-                         The token needs to be a valid bearer token for the Elastic Path API. \
-                         If the token is not included in the tool call, don\'t execute the call and ask for the token first.',
-                parameters: z.object({
-                    endpoint: z.string().describe('the endpoint to call'),
-                    token: z.string().describe('the token to use'),
-                    body: z.any().describe('the body to pass to the endpoint'),
-                }),
-                execute: async ({ endpoint, token, body }) => execPutRequest(endpoint, token, body),
-            }), 
-        }
     } else {
         systemPrompt = prompts.PROMPT_EPSM_DOCS_INTRO + prompts.PROMPT_EPSM_DOCS_OUTRO;
-        epsmTools = {
-            getContent: tool({
-                description: 'get content from Elastic Path knowledge base',
-                parameters: z.object({
-                    latestMessage: z.string().describe('the users question'),
-                }),
-                execute: async ({ latestMessage }) => findRelevantContent(latestMessage),
-            }),
-        }
     }
-    //console.log(`systemPrompt: ${systemPrompt}`);
+    console.log(`systemPrompt: ${systemPrompt}`);
     // Start a new LLM span
     //llmobs.wrap({ kind: 'tool' }, findRelevantContent);
 
-    try {
-        result = streamText({
-                model: openai('gpt-4o'),
-                messages: [
+    result = streamText({
+            model: openai('gpt-4o'),
+            messages: [
                 { role: "system", content: systemPrompt },
                 ...messages
             ],
             //experimental_telemetry: AISDKExporter.getSettings(),
-            maxSteps: 10,
-            tools: site === 'EPCC' ? epccTools : epsmTools,
-            toolChoice: 'auto',
+            maxSteps: 3,
+            tools: {
+                getContent: tool({
+                    description: 'get content from Elastic Path knowledge base',
+                    parameters: z.object({
+                        latestMessage: z.string().describe('the users question'),
+                    }),
+                    execute: async ({ latestMessage }) => findRelevantContent(latestMessage),
+                }),
+                getTechnicalContent: tool({
+                    description: 'get technical content, like API reference and code from Elastic Path API reference',
+                    parameters: z.object({
+                        latestMessage: z.string().describe('the users question'),
+                    }),
+                    execute: async ({ latestMessage }) => findTechnicalContent(latestMessage),
+                }),
+                // execGetRequest: tool({
+                //     description: 'execute a GET request to the specified endpoint',
+                //     parameters: z.object({
+                //         endpoint: z.string().describe('the endpoint to call'),
+                //         token: z.string().describe('the token to use'),
+                //         params: z.record(z.string(), z.string()).describe('the parameters to pass to the endpoint'),
+                //     }),
+                //     execute: async ({ endpoint, token, params }) => execGetRequest(endpoint, token, params),
+                // }),
+            },
             onFinish: ({ usage, text }) => {
                 const { promptTokens, completionTokens, totalTokens } = usage;
-                // console.log(`markdown text: ${text}`);
+                console.log(`markdown text: ${text}`);
                 console.log('Prompt tokens:', promptTokens);
                 console.log('Completion tokens:', completionTokens);
                 console.log('Total tokens:', totalTokens);
@@ -159,31 +178,32 @@ export async function POST(request: Request) {
                     })
                 })
             },
-            // onStepFinish: (step) => {
-            //     // console.log(`step: ${JSON.stringify(step.toolCalls)}`);
-            // }
         });
 
-        return result.toDataStreamResponse({
-            getErrorMessage: (error: any) => {
-                if (NoSuchToolError.isInstance(error)) {
-                  return 'The model tried to call a unknown tool.';
-                } else if (InvalidToolArgumentsError.isInstance(error)) {
-                    console.log(`InvalidToolArgumentsError: ${error.toolName} with arguments: ${error.toolArgs}`);
-                  return 'The model called a tool with invalid arguments.';
-                } else if (ToolExecutionError.isInstance(error)) {
-                  return `An error occurred during tool execution: ${error.message}`;
-                } else {
-                  return 'An unknown error occurred.';
-                }
-              },
+        const response = result.toDataStreamResponse();
+        
+        // Add CORS headers to streaming response
+        Object.entries(corsHeaders).forEach(([key, value]) => {
+            response.headers.set(key, value);
         });
+        
+        return response;
 
     } catch (error) {
-        console.error('Error in streamText:', error);
-        throw error;
+        console.error('Chat API error:', error);
+        
+        return new Response(
+            JSON.stringify({ 
+                error: 'Internal server error',
+                message: process.env.NODE_ENV === 'development' ? error?.toString() : 'Something went wrong'
+            }),
+            {
+                status: 500,
+                headers: {
+                    ...corsHeaders,
+                    'Content-Type': 'application/json',
+                },
+            }
+        );
     }
-
-    
-
 }
