@@ -121,8 +121,27 @@ export async function POST(request: Request) {
 
         // 3. Request validation
         const body = await request.json();
+        
+        // Debug logging for request body structure
+        console.log('Request body structure:', {
+            hasMessages: !!body.messages,
+            messagesType: typeof body.messages,
+            messagesLength: Array.isArray(body.messages) ? body.messages.length : 'not array',
+            useTools: body.useTools,
+            bodyKeys: Object.keys(body || {}),
+            firstMessage: body.messages?.[0] ? {
+                hasRole: !!body.messages[0].role,
+                hasContent: !!body.messages[0].content,
+                role: body.messages[0].role,
+                contentType: typeof body.messages[0].content,
+                contentLength: body.messages[0].content?.length || 0,
+                messageKeys: Object.keys(body.messages[0] || {})
+            } : 'no first message'
+        });
+        
         const validation = validateChatRequest(body);
         if (!validation.valid) {
+            console.error('Validation failed:', validation.error, 'Body:', JSON.stringify(body, null, 2));
             return new Response(
                 JSON.stringify({ error: validation.error }),
                 {
