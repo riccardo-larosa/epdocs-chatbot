@@ -19,28 +19,23 @@ export default function Ask() {
     { 
       api: '/api/chat',
       body: { useTools: true },
-      // Custom fetch function with timeout handling
-      fetch: async (url, options) => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes
-        
-        try {
-          const response = await fetch(url, {
-            ...options,
-            signal: controller.signal,
-          });
-          clearTimeout(timeoutId);
-          return response;
-        } catch (error) {
-          clearTimeout(timeoutId);
-          if (error instanceof Error && error.name === 'AbortError') {
-            throw new Error('Request timed out after 5 minutes. This can happen with very long responses. Please try asking a more specific question.');
-          }
-          throw error;
-        }
-      },
       onError: (error) => {
         console.error('Chat error:', error);
+        // Add detailed error logging for debugging
+        console.error('Error details:', {
+          name: error.name,
+          message: error.message,
+          cause: error.cause,
+          stack: error.stack
+        });
+        
+        // Log the full error object
+        try {
+          console.error('Full error object:', JSON.stringify(error, null, 2));
+        } catch (e) {
+          console.error('Could not stringify error:', e);
+        }
+        
         if (error.message?.includes('timeout') || error.message?.includes('aborted')) {
           console.warn('Request timed out - this can happen with very long responses');
         }
