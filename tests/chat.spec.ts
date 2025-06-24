@@ -17,9 +17,9 @@ test.describe('Chat Application', () => {
     // await page.getByRole('button', { name: 'Send' }).click();
     await page.locator('form').getByRole('button').click();
     
-    // Wait for response
+    // Wait for response with extended timeout for longer responses
     await expect(page.locator('.whitespace-pre-wrap').filter({ hasText: 'PXM' }))
-      .toBeVisible({ timeout: 30000 });
+      .toBeVisible({ timeout: 120000 }); // Increased to 2 minutes for complex responses
   });
 
   test('should show error message properly', async ({ page }) => {

@@ -116,17 +116,59 @@ export function validateChatRequest(body: any): { valid: boolean; error?: string
     return { valid: false, error: 'Messages array is required and cannot be empty' };
   }
   
-  for (const message of messages) {
-    if (!message.role || !message.content) {
-      return { valid: false, error: 'Each message must have role and content' };
+  for (let i = 0; i < messages.length; i++) {
+    const message = messages[i];
+    
+    // More detailed validation with index information
+    if (!message || typeof message !== 'object') {
+      return { valid: false, error: `Message at index ${i} is not an object` };
+    }
+    
+    if (!message.role) {
+      return { valid: false, error: `Message at index ${i} is missing role property` };
     }
     
     if (!['user', 'assistant', 'system'].includes(message.role)) {
-      return { valid: false, error: 'Invalid message role' };
+      return { valid: false, error: `Message at index ${i} has invalid role: ${message.role}` };
     }
     
-    if (typeof message.content !== 'string' || message.content.trim().length === 0) {
-      return { valid: false, error: 'Message content must be a non-empty string' };
+    // Handle different message formats from AI SDK
+    let messageContent = '';
+    
+    // Check if message has content property
+    if (message.content !== undefined && message.content !== null) {
+      messageContent = message.content;
+    }
+    // Check if message has parts array (AI SDK v5+ format)
+    else if (Array.isArray(message.parts)) {
+      // Extract text from parts array
+      const textParts = message.parts.filter((part: any) => part.type === 'text');
+      messageContent = textParts.map((part: any) => part.text || '').join(' ');
+    }
+    // Handle other possible formats
+    else if (message.text !== undefined) {
+      messageContent = message.text;
+    }
+    
+    // Allow empty content for assistant messages that might be streaming
+    if (message.role === 'assistant' && (!messageContent || messageContent.trim() === '')) {
+      // This is okay for streaming responses
+      continue;
+    }
+    
+    // Validate content type
+    if (messageContent !== undefined && typeof messageContent !== 'string') {
+      return { valid: false, error: `Message at index ${i} content must be a string, got ${typeof messageContent}` };
+    }
+    
+    // Only require non-empty content for user messages
+    if (message.role === 'user' && (!messageContent || messageContent.trim().length === 0)) {
+      return { valid: false, error: `User message at index ${i} cannot have empty content` };
+    }
+    
+    // For user messages, ensure we have some content
+    if (message.role === 'user' && !messageContent) {
+      return { valid: false, error: `User message at index ${i} is missing content` };
     }
   }
   

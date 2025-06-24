@@ -1,0 +1,9 @@
+{
+  "functions": {
+    "src/app/api/chat/route.ts": {
+      "maxDuration": 300
+    }
+  },
+  "regions": ["iad1"],
+  "buildCommand": "npm run build"
+} 

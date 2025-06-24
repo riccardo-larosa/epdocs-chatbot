@@ -14,6 +14,10 @@ import {
   validateChatRequest 
 } from '@/lib/apiSecurity';
 
+// Set maximum duration for this API route (in seconds)
+// This prevents timeouts for long AI responses
+export const maxDuration = 300; // 5 minutes
+
 // Handle CORS preflight requests
 export async function OPTIONS(request: Request) {
     const corsHeaders = getCorsHeaders(request);
@@ -117,8 +121,10 @@ export async function POST(request: Request) {
 
         // 3. Request validation
         const body = await request.json();
+        
         const validation = validateChatRequest(body);
         if (!validation.valid) {
+            console.error('Chat validation failed:', validation.error);
             return new Response(
                 JSON.stringify({ error: validation.error }),
                 {
@@ -219,14 +225,18 @@ export async function POST(request: Request) {
                 console.log('Prompt tokens:', promptTokens);
                 console.log('Completion tokens:', completionTokens);
                 console.log('Total tokens:', totalTokens);
-                llmobs.trace({ kind: 'llm', name: 'myLLM', modelName: 'gpt-4o', modelProvider: 'openai' }, () => {
-                    llmobs.annotate({
-                        inputData: [ { content: `${latestMessage}`, role: 'user' }],
-                        outputData: { content: `${text}`, role: 'ai' },
-                        tags: { host: process.env.NEXT_PUBLIC_VERCEL_URL },
-                        metrics: { inputTokens: promptTokens, outputTokens: completionTokens, totalTokens: totalTokens }
+                
+                // Only trace with Datadog if DD_API_KEY is available
+                if (process.env.DD_API_KEY) {
+                    llmobs.trace({ kind: 'llm', name: 'myLLM', modelName: 'gpt-4o', modelProvider: 'openai' }, () => {
+                        llmobs.annotate({
+                            inputData: [ { content: `${latestMessage}`, role: 'user' }],
+                            outputData: { content: `${text}`, role: 'ai' },
+                            tags: { host: process.env.NEXT_PUBLIC_VERCEL_URL },
+                            metrics: { inputTokens: promptTokens, outputTokens: completionTokens, totalTokens: totalTokens }
+                        })
                     })
-                })
+                }
             },
         });
 
