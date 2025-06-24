@@ -17,11 +17,17 @@ The hosted chatbot at `chat.elasticpath.dev/ask` was returning `{"error":"Unauth
 
 ### Environment Variable Required
 
-**CRITICAL**: You must set this environment variable in your production deployment:
+**CRITICAL**: You must set these environment variables in your production deployment:
 
 ```bash
+# Primary domain (for your main deployment)
 NEXT_PUBLIC_VERCEL_URL=https://chat.elasticpath.dev
+
+# Additional hosted domains (for multiple deployments)
+HOSTED_DOMAINS=chat.elasticpath.dev,chat-smc-elasticpath.dev
 ```
+
+**For multiple deployments**: Each deployment should have both variables set with the same values.
 
 ## 🚀 Deployment Steps
 
@@ -30,12 +36,16 @@ NEXT_PUBLIC_VERCEL_URL=https://chat.elasticpath.dev
 In your deployment platform (Vercel/Netlify/etc.), ensure these are set:
 
 ```bash
-# REQUIRED: Your actual domain
+# REQUIRED: Your actual domains
 NEXT_PUBLIC_VERCEL_URL=https://chat.elasticpath.dev
+HOSTED_DOMAINS=chat.elasticpath.dev,chat-smc-elasticpath.dev
 
 # API Security (these control external API access only)
 REQUIRE_API_KEY=true
 VALID_API_KEYS=your-api-key-1,your-api-key-2
+
+# Optional: Enable debug logging for troubleshooting
+# DEBUG_AUTH=true
 
 # Other required variables
 MONGODB_CONNECTION_URI=mongodb+srv://...
@@ -90,7 +100,15 @@ After deployment, test:
 
 ### Detection Logic
 ```typescript
-const isHostedUI = (origin && origin.includes(hostedDomain)) ||
+const hostedDomains = [
+    process.env.NEXT_PUBLIC_VERCEL_URL,
+    ...(process.env.HOSTED_DOMAINS?.split(',') || []),
+    'localhost:3000', // Local development
+    'chat.elasticpath.dev', // Fallback
+    'chat-smc-elasticpath.dev', // Fallback
+];
+
+const isHostedUI = (origin && hostedDomains.some(domain => origin.includes(domain))) ||
                    (referer && referer.includes('/ask')) ||
                    (!origin && !referer); // Server-side
 

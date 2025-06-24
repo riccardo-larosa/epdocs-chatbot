@@ -14,6 +14,10 @@ import {
   validateChatRequest 
 } from '@/lib/apiSecurity';
 
+// Set maximum duration for this API route (in seconds)
+// This prevents timeouts for long AI responses
+export const maxDuration = 300; // 5 minutes
+
 // Handle CORS preflight requests
 export async function OPTIONS(request: Request) {
     const corsHeaders = getCorsHeaders(request);

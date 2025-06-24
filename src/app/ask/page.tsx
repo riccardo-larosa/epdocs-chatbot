@@ -2,31 +2,110 @@
 
 import { Message, useChat } from 'ai/react';
 import { SendIcon, Sparkles } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import PromptSuggestions from '@/components/PromptSuggestions';
 import EpIcon from '@/components/icons/EpIcon';
 // import LoadingBubbles from '../components/LoadingBubbles';
 import React from 'react';
 import FormatResponse from '@/components/FormatResponse';
-
-interface ChatError extends Error {
-  cause: Error ;
-}
+import { TimeoutWarning, TimeoutError } from '@/components/TimeoutWarning';
 
 export default function Ask() {
+  const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
+  const [lastUserMessage, setLastUserMessage] = useState<string>('');
+  const timeoutWarningRef = useRef<NodeJS.Timeout | null>(null);
+
   const { messages, input, handleInputChange, handleSubmit, error, append, isLoading } = useChat(
-    { api: '/api/chat',
-      body: { useTools: true }
-     }
+    { 
+      api: '/api/chat',
+      body: { useTools: true },
+      // Custom fetch function with timeout handling
+      fetch: async (url, options) => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes
+        
+        try {
+          const response = await fetch(url, {
+            ...options,
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+          return response;
+        } catch (error) {
+          clearTimeout(timeoutId);
+          if (error instanceof Error && error.name === 'AbortError') {
+            throw new Error('Request timed out after 5 minutes. This can happen with very long responses. Please try asking a more specific question.');
+          }
+          throw error;
+        }
+      },
+      onError: (error) => {
+        console.error('Chat error:', error);
+        if (error.message?.includes('timeout') || error.message?.includes('aborted')) {
+          console.warn('Request timed out - this can happen with very long responses');
+        }
+        // Clear timeout warning when error occurs
+        setShowTimeoutWarning(false);
+        if (timeoutWarningRef.current) {
+          clearTimeout(timeoutWarningRef.current);
+          timeoutWarningRef.current = null;
+        }
+      },
+      onFinish: () => {
+        // Clear timeout warning when response finishes
+        setShowTimeoutWarning(false);
+        if (timeoutWarningRef.current) {
+          clearTimeout(timeoutWarningRef.current);
+          timeoutWarningRef.current = null;
+        }
+      }
+    }
   );
+
   const newSession = !messages || messages.length === 0;
+  
   const handlePrompt = (prompt: string) => {
     const msg: Message = {
       id: crypto.randomUUID(),
       content: prompt,
       role: "user",
     };
+    setLastUserMessage(prompt);
     append(msg);
+    
+    // Start timeout warning after 30 seconds
+    timeoutWarningRef.current = setTimeout(() => {
+      setShowTimeoutWarning(true);
+    }, 30000);
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (input.trim()) {
+      setLastUserMessage(input.trim());
+      
+      // Start timeout warning after 30 seconds
+      timeoutWarningRef.current = setTimeout(() => {
+        setShowTimeoutWarning(true);
+      }, 30000);
+    }
+    handleSubmit(e);
+  };
+
+  const handleRetry = () => {
+    if (lastUserMessage) {
+      const msg: Message = {
+        id: crypto.randomUUID(),
+        content: lastUserMessage,
+        role: "user",
+      };
+      append(msg);
+      
+      // Start timeout warning after 30 seconds
+      timeoutWarningRef.current = setTimeout(() => {
+        setShowTimeoutWarning(true);
+      }, 30000);
+    }
   };
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -47,6 +126,24 @@ export default function Ask() {
     }
   }, [error]);
 
+  // Clear timeout warning when loading stops
+  useEffect(() => {
+    if (!isLoading && timeoutWarningRef.current) {
+      setShowTimeoutWarning(false);
+      clearTimeout(timeoutWarningRef.current);
+      timeoutWarningRef.current = null;
+    }
+  }, [isLoading]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutWarningRef.current) {
+        clearTimeout(timeoutWarningRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div className="relative w-full max-w-3xl mx-auto">
       <div className="flex flex-col w-full max-w-3xl px-6 pt-6 mx-auto stretch bg-[#F9FBFA] dark:bg-[#1F2937]">
@@ -62,6 +159,12 @@ export default function Ask() {
                 </div>
               </div>
             </div>
+
+            {/* Timeout Warning */}
+            <TimeoutWarning 
+              isVisible={showTimeoutWarning && isLoading} 
+              onDismiss={() => setShowTimeoutWarning(false)}
+            />
 
             <br />
             <PromptSuggestions onPromptClick={handlePrompt} />
@@ -95,32 +198,13 @@ export default function Ask() {
                         </div>
                       </>
                     )}
-
-                    {error && (
-                      <>
-                        <div className="flex gap-3 mt-4">
-                          <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 dark:bg-red-900">
-                            <svg className="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                            </svg>
-                          </div>
-                          <div className="bg-red-50 dark:bg-red-900/50 rounded-lg p-4 max-w-[80%] text-red-800 dark:text-red-200">
-                            <p className="font-semibold mb-1">Error</p>
-                            <p className="text-sm">{(error as ChatError).message}</p>
-                            {(error as ChatError).cause && (
-                              <p className="text-sm mt-2 text-red-700 dark:text-red-300">
-                                Reason: {(error as ChatError).cause instanceof Error ? (error as ChatError).cause.message : String((error as ChatError).cause)}
-                              </p>
-                            )}
-                            <p className="text-xs mt-2 text-red-600 dark:text-red-400">
-                              Please try again or refresh the page if the problem persists.
-                            </p>
-                          </div>
-                        </div>
-                      </>
-                    )}
                   </div>
                 ))}
+
+                {/* Error Display */}
+                {error && (
+                  <TimeoutError error={error as Error} onRetry={handleRetry} />
+                )}
               </>
             )}
             <div ref={messagesEndRef} />
@@ -128,7 +212,7 @@ export default function Ask() {
         </section>
       </div>
       <div className="fixed bottom-0 w-full max-w-3xl   dark:bg-[#1F2937] pt-6">
-        <form onSubmit={handleSubmit} className="flex flex-col justify-center items-center px-6">
+        <form onSubmit={handleFormSubmit} className="flex flex-col justify-center items-center px-6">
           <div className={`w-full flex items-center p-2 mb-2 rounded-full shadow-xl 
               ${isLoading ? ' animate-pulse border-slate-600 border-4' : ' border-2 border-slate-700 '}`}>
             <Sparkles className="w-5 h-5 text-gray-400 mr-2" />
@@ -139,7 +223,7 @@ export default function Ask() {
               onChange={handleInputChange}
               disabled={isLoading}
             />
-            <button type="submit" className="text-gray-400 hover:text-gray-600 ml-2">
+            <button type="submit" className="text-gray-400 hover:text-gray-600 ml-2" disabled={isLoading}>
               <SendIcon className="w-5 h-5" />
             </button>
           </div>
