@@ -113,7 +113,11 @@ export async function POST(request: Request) {
                 referer.includes('127.0.0.1')
             )) ||
             // Direct server-side requests (no origin/referer)
-            (!origin && !referer);
+            (!origin && !referer) ||
+            // Development mode: treat localhost requests as hosted UI
+            (process.env.NODE_ENV === 'development') ||
+            // If DEBUG_AUTH is enabled, be more permissive for testing
+            (process.env.DEBUG_AUTH === 'true' && !origin && !referer);
         
         // Debug logging for troubleshooting
         if (process.env.NODE_ENV === 'development' || process.env.DEBUG_AUTH === 'true') {
@@ -128,11 +132,23 @@ export async function POST(request: Request) {
         }
         
         // Only require API key for external API access, not for the hosted chatbot UI
-        if (process.env.REQUIRE_API_KEY === 'true' && !isHostedUI && !validateApiKey(apiKey || '')) {
+        // BUT: If no API keys are configured, allow all requests (development/testing mode)
+        const shouldRequireApiKey = process.env.REQUIRE_API_KEY === 'true' && 
+                                   !isHostedUI && 
+                                   process.env.VALID_API_KEYS && 
+                                   process.env.VALID_API_KEYS.trim() !== '';
+        
+        if (shouldRequireApiKey && !validateApiKey(apiKey || '')) {
             return new Response(
                 JSON.stringify({ 
                     error: 'API key required for external access',
-                    message: 'This endpoint requires an API key when accessed from external applications. The hosted chatbot interface does not require an API key.'
+                    message: 'This endpoint requires an API key when accessed from external applications. The hosted chatbot interface does not require an API key.',
+                    debug: process.env.DEBUG_AUTH === 'true' ? {
+                        isHostedUI,
+                        hasValidApiKeys: !!(process.env.VALID_API_KEYS && process.env.VALID_API_KEYS.trim() !== ''),
+                        origin,
+                        referer
+                    } : undefined
                 }),
                 {
                     status: 401,
