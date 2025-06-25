@@ -65,6 +65,23 @@ Open [http://localhost:3000](http://localhost:3000) to start chatting!
 - `NEXT_PUBLIC_SITE`: Site to search ('EPCC' or 'EPSM')
 - `DD_API_KEY`: DataDog API key (optional)
 
+## Updating Documentation Database
+
+To update the chatbot's knowledge base with new documentation:
+
+```bash
+# Test database connection
+npm run db:test
+
+# Update general documentation 
+npm run update-docs
+
+# Update API documentation
+npm run update-api-docs
+```
+
+For detailed instructions, see [DATABASE_UPDATE_GUIDE.md](DATABASE_UPDATE_GUIDE.md).
+
 ## Contributing
 
 1. Create a new branch
