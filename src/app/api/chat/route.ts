@@ -24,6 +24,31 @@ export async function OPTIONS(request: Request) {
     return new Response(null, { status: 200, headers: corsHeaders });
 }
 
+// Handle GET requests with clear error message
+export async function GET(request: Request) {
+    const corsHeaders = getCorsHeaders(request);
+    return new Response(
+        JSON.stringify({ 
+            error: 'Method Not Allowed',
+            message: 'This endpoint only supports POST requests. Please send a POST request with a JSON body containing messages.',
+            allowedMethods: ['POST', 'OPTIONS'],
+            example: {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: { messages: [{ role: 'user', content: 'Your question here' }] }
+            }
+        }),
+        {
+            status: 405,
+            headers: {
+                ...corsHeaders,
+                'Content-Type': 'application/json',
+                'Allow': 'POST, OPTIONS'
+            },
+        }
+    );
+}
+
 export async function POST(request: Request) {
     const corsHeaders = getCorsHeaders(request);
 
@@ -88,7 +113,11 @@ export async function POST(request: Request) {
                 referer.includes('127.0.0.1')
             )) ||
             // Direct server-side requests (no origin/referer)
-            (!origin && !referer);
+            (!origin && !referer) ||
+            // Development mode: treat localhost requests as hosted UI
+            (process.env.NODE_ENV === 'development') ||
+            // If DEBUG_AUTH is enabled, be more permissive for testing
+            (process.env.DEBUG_AUTH === 'true' && !origin && !referer);
         
         // Debug logging for troubleshooting
         if (process.env.NODE_ENV === 'development' || process.env.DEBUG_AUTH === 'true') {
@@ -103,11 +132,23 @@ export async function POST(request: Request) {
         }
         
         // Only require API key for external API access, not for the hosted chatbot UI
-        if (process.env.REQUIRE_API_KEY === 'true' && !isHostedUI && !validateApiKey(apiKey || '')) {
+        // BUT: If no API keys are configured, allow all requests (development/testing mode)
+        const shouldRequireApiKey = process.env.REQUIRE_API_KEY === 'true' && 
+                                   !isHostedUI && 
+                                   process.env.VALID_API_KEYS && 
+                                   process.env.VALID_API_KEYS.trim() !== '';
+        
+        if (shouldRequireApiKey && !validateApiKey(apiKey || '')) {
             return new Response(
                 JSON.stringify({ 
                     error: 'API key required for external access',
-                    message: 'This endpoint requires an API key when accessed from external applications. The hosted chatbot interface does not require an API key.'
+                    message: 'This endpoint requires an API key when accessed from external applications. The hosted chatbot interface does not require an API key.',
+                    debug: process.env.DEBUG_AUTH === 'true' ? {
+                        isHostedUI,
+                        hasValidApiKeys: !!(process.env.VALID_API_KEYS && process.env.VALID_API_KEYS.trim() !== ''),
+                        origin,
+                        referer
+                    } : undefined
                 }),
                 {
                     status: 401,
@@ -252,10 +293,38 @@ export async function POST(request: Request) {
     } catch (error) {
         console.error('Chat API error:', error);
         
+        // Enhanced error logging for debugging
+        if (error instanceof Error) {
+            console.error('Error name:', error.name);
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
+        }
+        
+        // Check for specific MongoDB connection errors
+        if (error && typeof error === 'object' && 'message' in error && 
+            typeof error.message === 'string' && error.message.includes('MongoServerSelectionError')) {
+            console.error('MongoDB connection failed. Check MONGODB_CONNECTION_URI environment variable.');
+        }
+        
+        // Check for OpenAI API errors
+        if (error && typeof error === 'object' && 'message' in error && 
+            typeof error.message === 'string' && error.message.includes('OpenAI')) {
+            console.error('OpenAI API error. Check OPENAI_API_KEY environment variable.');
+        }
+        
         return new Response(
             JSON.stringify({ 
                 error: 'Internal server error',
-                message: process.env.NODE_ENV === 'development' ? error?.toString() : 'Something went wrong'
+                message: process.env.NODE_ENV === 'development' ? error?.toString() : 'Something went wrong',
+                // Add debug info in development
+                                 debug: process.env.NODE_ENV === 'development' ? {
+                     errorType: error instanceof Error ? error.name : 'Unknown',
+                     envVars: {
+                         hasMongoUri: !!process.env.MONGODB_CONNECTION_URI,
+                         hasOpenAIKey: !!process.env.OPENAI_API_KEY,
+                         site: process.env.NEXT_PUBLIC_SITE
+                     }
+                 } : undefined
             }),
             {
                 status: 500,
