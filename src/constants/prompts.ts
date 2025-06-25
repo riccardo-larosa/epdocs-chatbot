@@ -19,7 +19,7 @@ const PROMPT_EPCC_DOCS_INTRO = `
     Composer,
     and any other product that is not listed here.
 
-    Prioritize Promotions Builder over Promotions Standard unless the question is specifically about Promotions Standard.
+    Prioritize Promotions Builder over Promotions Standard - located at /promotions/promotions-standard - unless the question is specifically about Promotions Standard.
 
     Prioritize Account Management over Customers unless the question is specifically about Customers.
     
