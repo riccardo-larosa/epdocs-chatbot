@@ -247,6 +247,8 @@ async function main() {
       docsPath = process.env.EPCC_DOCS_PATH || './epcc-docs';
     } else if (process.env.COLLECTION_OVERRIDE === 'epsm') {
       docsPath = process.env.EPSM_DOCS_PATH || './epsm-docs';
+    } else if (process.env.COLLECTION_OVERRIDE === 'rfp') {
+      docsPath = process.env.RFP_PATH || './rfp';
     } else {
       docsPath = process.env.DOCS_PATH || './docs';
     }
@@ -257,8 +259,14 @@ async function main() {
   if (!collectionName) {
     if (process.env.COLLECTION_OVERRIDE === 'api') {
       collectionName = process.env.MONGODB_API_COLLECTION_NAME || 'openapis_prod';
+    } else if (process.env.COLLECTION_OVERRIDE === 'epcc') {
+      collectionName = process.env.MONGODB_EPCC_COLLECTION_NAME || 'epcc_docs_prod';
+    } else if (process.env.COLLECTION_OVERRIDE === 'epsm') {
+      collectionName = process.env.MONGODB_EPSM_COLLECTION_NAME || 'epsm_docs_prod';
+    } else if (process.env.COLLECTION_OVERRIDE === 'rfp') {
+      collectionName = process.env.MONGODB_RFP_COLLECTION_NAME || 'rfp_docs_prod';
     } else {
-      // All other content types (guides, epcc, docs) go into the main collection
+      // Main docs and guides go into the main collection
       collectionName = process.env.MONGODB_COLLECTION_NAME || 'chat_docs_prod';
     }
   }
