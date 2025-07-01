@@ -277,7 +277,7 @@ Context: ${context}
             maxSteps: 3,
             tools: {
                 getContent: tool({
-                    description: mode === 'rfp' ? 'get RFP-focused content from Elastic Path knowledge base, prioritizing pricing, implementation, security, and customer success information' : 'get content from Elastic Path knowledge base',
+                    description: mode === 'rfp' ? 'get RFP-focused content from Elastic Path knowledge base, STRONGLY prioritizing RFP collection content over documentation and web content. Focus on pricing, implementation, security, and customer success information from RFP responses.' : 'get content from Elastic Path knowledge base',
                     parameters: z.object({
                         latestMessage: z.string().describe('the users question'),
                     }),
@@ -291,7 +291,7 @@ Context: ${context}
                     execute: async ({ latestMessage }) => findTechnicalContent(latestMessage),
                 }),
                 scrapeWebPage: tool({
-                    description: isWebScrapingEnabled() ? 'scrape content from a whitelisted web page. Only URLs that have been specifically allowed can be scraped for security reasons.' : 'web scraping is not enabled. No external URLs can be scraped.',
+                    description: isWebScrapingEnabled() ? (mode === 'rfp' ? 'scrape content from a whitelisted web page ONLY as a last resort when RFP content and documentation are insufficient. RFP responses should prioritize curated RFP content over web-scraped content.' : 'scrape content from a whitelisted web page. Only URLs that have been specifically allowed can be scraped for security reasons.') : 'web scraping is not enabled. No external URLs can be scraped.',
                     parameters: z.object({
                         url: z.string().describe('the URL to scrape (must be in the allowed whitelist)'),
                     }),

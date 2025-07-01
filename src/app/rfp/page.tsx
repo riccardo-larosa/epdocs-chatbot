@@ -1,95 +1,108 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Message } from 'ai/react'
+import { Message, useChat } from 'ai/react'
 import FormatResponse from '@/components/FormatResponse'
 import PromptSuggestions from '@/components/PromptSuggestions'
 import LoadingBubbles from '@/components/LoadingBubbles'
-import { TimeoutWarning } from '@/components/TimeoutWarning'
+import { TimeoutWarning, TimeoutError } from '@/components/TimeoutWarning'
 import ThemeToggle from '@/components/ThemeToggle'
 
 
 
 export default function RFPPage() {
-  const [messages, setMessages] = useState<Message[]>([])
-  const [input, setInput] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
   const [showTimeoutWarning, setShowTimeoutWarning] = useState(false)
+  const timeoutWarningRef = useRef<NodeJS.Timeout | null>(null)
+
+  const { messages, input, handleInputChange, handleSubmit, error, append, isLoading } = useChat(
+    { 
+      api: '/api/chat',
+      body: { useTools: true, mode: 'rfp' },
+      onError: (error) => {
+        console.error('Chat error:', error);
+        setShowTimeoutWarning(false);
+        if (timeoutWarningRef.current) {
+          clearTimeout(timeoutWarningRef.current);
+          timeoutWarningRef.current = null;
+        }
+      },
+      onFinish: () => {
+        setShowTimeoutWarning(false);
+        if (timeoutWarningRef.current) {
+          clearTimeout(timeoutWarningRef.current);
+          timeoutWarningRef.current = null;
+        }
+      }
+    }
+  )
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const timeoutRef = useRef<NodeJS.Timeout>()
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
   useEffect(() => {
-    scrollToBottom()
+    if (messages && messages.length > 0) {
+      scrollToBottom()
+    }
   }, [messages])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Clear timeout warning when loading stops
+  useEffect(() => {
+    if (!isLoading && timeoutWarningRef.current) {
+      setShowTimeoutWarning(false);
+      clearTimeout(timeoutWarningRef.current);
+      timeoutWarningRef.current = null;
+    }
+  }, [isLoading]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutWarningRef.current) {
+        clearTimeout(timeoutWarningRef.current);
+      }
+    };
+  }, []);
+
+  const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!input.trim() || isLoading) return
-
-    const userMessage: Message = {
-      id: crypto.randomUUID(),
-      role: 'user',
-      content: input,
+    if (input.trim()) {
+      // Start timeout warning after 25 seconds
+      timeoutWarningRef.current = setTimeout(() => {
+        setShowTimeoutWarning(true)
+      }, 25000)
     }
-
-    setMessages(prev => [...prev, userMessage])
-    setInput('')
-    setIsLoading(true)
-    setShowTimeoutWarning(false)
-
-    // Set timeout warning
-    timeoutRef.current = setTimeout(() => {
-      setShowTimeoutWarning(true)
-    }, 25000)
-
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: input,
-          history: messages,
-          mode: 'rfp' // Add RFP mode flag
-        }),
-      })
-
-      clearTimeout(timeoutRef.current)
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json()
-      
-      const assistantMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: data.response,
-      }
-
-      setMessages(prev => [...prev, assistantMessage])
-    } catch (error) {
-      console.error('Error:', error)
-      const errorMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: 'Sorry, I encountered an error while processing your request. Please try again.',
-      }
-      setMessages(prev => [...prev, errorMessage])
-    } finally {
-      setIsLoading(false)
-      setShowTimeoutWarning(false)
-    }
+    handleSubmit(e)
   }
 
   const handlePrompt = (prompt: string) => {
-    setInput(prompt)
+    const msg: Message = {
+      id: crypto.randomUUID(),
+      content: prompt,
+      role: "user",
+    };
+    append(msg);
+    
+    // Start timeout warning after 25 seconds
+    timeoutWarningRef.current = setTimeout(() => {
+      setShowTimeoutWarning(true)
+    }, 25000)
+  }
+
+  const handleRetry = () => {
+    if (messages && messages.length > 0) {
+      const lastUserMessage = messages[messages.length - 1];
+      if (lastUserMessage.role === 'user') {
+        append(lastUserMessage);
+        
+        // Start timeout warning after 25 seconds
+        timeoutWarningRef.current = setTimeout(() => {
+          setShowTimeoutWarning(true)
+        }, 25000)
+      }
+    }
   }
 
   return (
@@ -114,7 +127,7 @@ export default function RFPPage() {
         <div className="max-w-4xl mx-auto h-full flex flex-col">
           {/* Messages */}
           <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
-            {messages.length === 0 && (
+            {(!messages || messages.length === 0) && (
               <div className="text-center py-12">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
                   Welcome to the Elastic Path RFP Assistant
@@ -127,7 +140,7 @@ export default function RFPPage() {
               </div>
             )}
             
-            {messages.map((message) => (
+            {messages?.map((message) => (
               <div key={message.id} className="whitespace-pre-wrap">
                 {message.role === 'user' ? (
                   <div className="flex flex-row-reverse gap-3 mb-4">
@@ -162,8 +175,13 @@ export default function RFPPage() {
               </div>
             )}
             
-            {showTimeoutWarning && (
+            {showTimeoutWarning && isLoading && (
               <TimeoutWarning isVisible={showTimeoutWarning} />
+            )}
+
+            {/* Error Display */}
+            {error && (
+              <TimeoutError error={error as Error} onRetry={handleRetry} />
             )}
             
             <div ref={messagesEndRef} />
@@ -171,11 +189,11 @@ export default function RFPPage() {
 
           {/* Input Form */}
           <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-            <form onSubmit={handleSubmit} className="flex space-x-4">
+            <form onSubmit={handleFormSubmit} className="flex space-x-4">
               <input
                 type="text"
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={handleInputChange}
                 placeholder="Ask about Elastic Path products, pricing, implementation, or any RFP-related questions..."
                 className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                 disabled={isLoading}

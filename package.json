@@ -16,6 +16,8 @@
     "update-epcc-docs": "COLLECTION_OVERRIDE=epcc npx tsx scripts/updateDatabase.ts",
     "update-epsm-docs": "COLLECTION_OVERRIDE=epsm npx tsx scripts/updateDatabase.ts",
     "update-rfp": "COLLECTION_OVERRIDE=rfp npx tsx scripts/updateDatabase.ts",
+    "add-file": "npx tsx scripts/addSingleFile.ts",
+    "setup-rfp-vector": "npx tsx scripts/setup-rfp-vector-search.ts",
     "db:test": "npx tsx scripts/testConnection.ts",
     "check-env": "npx tsx scripts/checkEnv.ts",
     "setup-vector-search": "npx tsx scripts/setup-vector-search.ts",

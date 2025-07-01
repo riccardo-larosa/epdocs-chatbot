@@ -358,6 +358,10 @@ Your RFP information needs to be in markdown. If the docs are in Word or PDF for
 
 ```pandoc "Proposal Template.txt" -o "proposal-template.md"```
 
+Adding a single file:
+
+```npm run add-file "/Users/davidjstover/elasticpath-rfp/new-rfp-file.md" "rfp_docs_prod" "/Users/davidjstover/elasticpath-rfp"```
+
 ### Testing and Maintenance
 
 ```bash
