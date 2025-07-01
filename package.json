@@ -10,13 +10,16 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
-    "update-docs": "tsx scripts/updateDatabase.ts",
-    "update-api-docs": "COLLECTION_OVERRIDE=api tsx scripts/updateDatabase.ts",
-    "update-guides": "COLLECTION_OVERRIDE=guides tsx scripts/updateDatabase.ts",
-    "update-epcc-docs": "COLLECTION_OVERRIDE=epcc tsx scripts/updateDatabase.ts",
-    "update-epsm-docs": "COLLECTION_OVERRIDE=epsm tsx scripts/updateDatabase.ts",
-    "db:test": "tsx scripts/testConnection.ts",
-    "check-env": "tsx scripts/checkEnv.ts"
+    "update-docs": "npx tsx scripts/updateDatabase.ts",
+    "update-api-docs": "COLLECTION_OVERRIDE=api npx tsx scripts/updateDatabase.ts",
+    "update-guides": "COLLECTION_OVERRIDE=guides npx tsx scripts/updateDatabase.ts",
+    "update-epcc-docs": "COLLECTION_OVERRIDE=epcc npx tsx scripts/updateDatabase.ts",
+    "update-epsm-docs": "COLLECTION_OVERRIDE=epsm npx tsx scripts/updateDatabase.ts",
+    "update-rfp": "COLLECTION_OVERRIDE=rfp npx tsx scripts/updateDatabase.ts",
+    "db:test": "npx tsx scripts/testConnection.ts",
+    "check-env": "npx tsx scripts/checkEnv.ts",
+    "setup-vector-search": "npx tsx scripts/setup-vector-search.ts",
+    "configure-web-scraping": "npx tsx scripts/configure-web-scraping.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^0.0.72",

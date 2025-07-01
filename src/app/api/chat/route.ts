@@ -1,6 +1,7 @@
 import { streamText, tool } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { findRelevantContent, findTechnicalContent } from '@/lib/mongoDbRetriever';
+import { scrapeWebPage, isWebScrapingEnabled, getAvailableScrapingTargets } from '@/lib/webScraper';
 // import { execGetRequest } from '@/lib/execRequests';
 import { z } from 'zod';
 // import { AISDKExporter } from 'langsmith/vercel';
@@ -178,8 +179,9 @@ export async function POST(request: Request) {
             );
         }
 
-        const { messages, useTools } = body;
+        const { messages, useTools, mode } = body;
     console.log(`useTools: ${useTools}`);
+    console.log(`mode: ${mode}`);
     const latestMessage = messages[messages?.length - 1]?.content;
     console.log(`latestMessage: ${latestMessage}`);
     const site = process.env.NEXT_PUBLIC_SITE;
@@ -194,34 +196,72 @@ export async function POST(request: Request) {
     let systemPrompt = '';
     let result: any;
 
-    if (!useTools) {
-        const content = await findRelevantContent(latestMessage);
-        context = content.map(doc => doc.pageContent).join('\n\n');
-        systemPrompt = prompts.PROMPT_EPCC_DOCS_INTRO + `
-            Answer the following question based on the context:
-            Question: ${latestMessage}
-            Context: ${context}
-            ` + prompts.PROMPT_EPCC_DOCS_OUTRO;
-        result =  streamText({
-            model: openai('gpt-4o'),
-            messages: [{ role: 'system', content: systemPrompt }, ...messages],
-            // experimental_telemetry: AISDKExporter.getSettings(),
-        });
+    // Handle RFP mode - prioritize RFP content
+    if (mode === 'rfp') {
+        if (!useTools) {
+            const content = await findRelevantContent(latestMessage, 'rfp');
+            context = content.map(doc => doc.pageContent).join('\n\n');
+            systemPrompt = prompts.PROMPT_RFP_INTRO + `
+Answer the following question based on the context, focusing on information relevant to RFP requirements:
+Question: ${latestMessage}
+Context: ${context}
+` + prompts.PROMPT_RFP_OUTRO;
+            
+            result = streamText({
+                model: openai('gpt-4o'),
+                messages: [{ role: 'system', content: systemPrompt }, ...messages],
+                // experimental_telemetry: AISDKExporter.getSettings(),
+            });
 
-        const response = result.toDataStreamResponse();
-        
-        // Add CORS headers to streaming response
-        Object.entries(corsHeaders).forEach(([key, value]) => {
-            response.headers.set(key, value);
-        });
-        
-        return response;
+            const response = result.toDataStreamResponse();
+            
+            // Add CORS headers to streaming response
+            Object.entries(corsHeaders).forEach(([key, value]) => {
+                response.headers.set(key, value);
+            });
+            
+            return response;
+        } else {
+            systemPrompt = prompts.PROMPT_RFP_INTRO + prompts.PROMPT_RFP_WITH_TOOLS + prompts.PROMPT_RFP_OUTRO;
+        }
+    } else {
+        // Standard mode
+        if (!useTools) {
+            const content = await findRelevantContent(latestMessage);
+            context = content.map(doc => doc.pageContent).join('\n\n');
+            systemPrompt = prompts.PROMPT_EPCC_DOCS_INTRO + `
+                Answer the following question based on the context:
+                Question: ${latestMessage}
+                Context: ${context}
+                ` + prompts.PROMPT_EPCC_DOCS_OUTRO;
+                
+            result = streamText({
+                model: openai('gpt-4o'),
+                messages: [{ role: 'system', content: systemPrompt }, ...messages],
+                // experimental_telemetry: AISDKExporter.getSettings(),
+            });
+
+            const response = result.toDataStreamResponse();
+            
+            // Add CORS headers to streaming response
+            Object.entries(corsHeaders).forEach(([key, value]) => {
+                response.headers.set(key, value);
+            });
+            
+            return response;
+        }
     }
 
-    if (site === 'EPCC') {
-        systemPrompt = prompts.PROMPT_EPCC_DOCS_INTRO + prompts.PROMPT_EPCC_DOCS_WITH_TOOLS + prompts.PROMPT_EPCC_DOCS_OUTRO;
+    // Handle tools mode
+    if (mode === 'rfp') {
+        const scrapingInfo = isWebScrapingEnabled() ? `\n\nWeb Scraping Available: ${getAvailableScrapingTargets()}` : '';
+        systemPrompt = prompts.PROMPT_RFP_INTRO + prompts.PROMPT_RFP_WITH_TOOLS + scrapingInfo + prompts.PROMPT_RFP_OUTRO;
+    } else if (site === 'EPCC') {
+        const scrapingInfo = isWebScrapingEnabled() ? `\n\nWeb Scraping Available: ${getAvailableScrapingTargets()}` : '';
+        systemPrompt = prompts.PROMPT_EPCC_DOCS_INTRO + prompts.PROMPT_EPCC_DOCS_WITH_TOOLS + scrapingInfo + prompts.PROMPT_EPCC_DOCS_OUTRO;
     } else {
-        systemPrompt = prompts.PROMPT_EPSM_DOCS_INTRO + prompts.PROMPT_EPSM_DOCS_OUTRO;
+        const scrapingInfo = isWebScrapingEnabled() ? `\n\nWeb Scraping Available: ${getAvailableScrapingTargets()}` : '';
+        systemPrompt = prompts.PROMPT_EPSM_DOCS_INTRO + scrapingInfo + prompts.PROMPT_EPSM_DOCS_OUTRO;
     }
     console.log(`systemPrompt: ${systemPrompt}`);
     // Start a new LLM span
@@ -237,18 +277,30 @@ export async function POST(request: Request) {
             maxSteps: 3,
             tools: {
                 getContent: tool({
-                    description: 'get content from Elastic Path knowledge base',
+                    description: mode === 'rfp' ? 'get RFP-focused content from Elastic Path knowledge base, prioritizing pricing, implementation, security, and customer success information' : 'get content from Elastic Path knowledge base',
                     parameters: z.object({
                         latestMessage: z.string().describe('the users question'),
                     }),
-                    execute: async ({ latestMessage }) => findRelevantContent(latestMessage),
+                    execute: async ({ latestMessage }) => findRelevantContent(latestMessage, mode),
                 }),
                 getTechnicalContent: tool({
-                    description: 'get technical content, like API reference and code from Elastic Path API reference',
+                    description: mode === 'rfp' ? 'get technical content for RFP responses, including API reference, architecture details, and integration capabilities' : 'get technical content, like API reference and code from Elastic Path API reference',
                     parameters: z.object({
                         latestMessage: z.string().describe('the users question'),
                     }),
                     execute: async ({ latestMessage }) => findTechnicalContent(latestMessage),
+                }),
+                scrapeWebPage: tool({
+                    description: isWebScrapingEnabled() ? 'scrape content from a whitelisted web page. Only URLs that have been specifically allowed can be scraped for security reasons.' : 'web scraping is not enabled. No external URLs can be scraped.',
+                    parameters: z.object({
+                        url: z.string().describe('the URL to scrape (must be in the allowed whitelist)'),
+                    }),
+                    execute: async ({ url }) => {
+                        if (!isWebScrapingEnabled()) {
+                            throw new Error('Web scraping is not enabled. No external URLs can be scraped.');
+                        }
+                        return await scrapeWebPage(url);
+                    },
                 }),
                 // execGetRequest: tool({
                 //     description: 'execute a GET request to the specified endpoint',
