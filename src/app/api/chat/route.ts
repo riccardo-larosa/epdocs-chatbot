@@ -106,9 +106,10 @@ export async function POST(request: Request) {
                 origin.includes('localhost') ||
                 origin.includes('127.0.0.1')
             )) ||
-            // Check referer for /ask path or hosted domains
+            // Check referer for /ask or /rfp path or hosted domains
             (referer && (
                 referer.includes('/ask') || 
+                referer.includes('/rfp') || 
                 hostedDomains.some(domain => referer.includes(domain)) ||
                 referer.includes('localhost') ||
                 referer.includes('127.0.0.1')
