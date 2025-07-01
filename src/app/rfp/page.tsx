@@ -1,23 +1,14 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Message } from '@/types/agent'
+import { Message } from 'ai/react'
 import FormatResponse from '@/components/FormatResponse'
-import { PromptSuggestions } from '@/components/PromptSuggestions'
-import { LoadingBubbles } from '@/components/LoadingBubbles'
+import PromptSuggestions from '@/components/PromptSuggestions'
+import LoadingBubbles from '@/components/LoadingBubbles'
 import { TimeoutWarning } from '@/components/TimeoutWarning'
-import { ThemeToggle } from '@/components/ThemeToggle'
+import ThemeToggle from '@/components/ThemeToggle'
 
-const RFP_PROMPT_SUGGESTIONS = [
-  "What are the key capabilities of Elastic Path's Product Experience Manager?",
-  "What is the implementation timeline for PXM?",
-  "What are the pricing and licensing options?",
-  "What security and compliance certifications do you have?",
-  "What integration capabilities are available?",
-  "What support and maintenance services do you provide?",
-  "What are the performance and scalability metrics?",
-  "Can you provide customer success stories and case studies?"
-]
+
 
 export default function RFPPage() {
   const [messages, setMessages] = useState<Message[]>([])
@@ -40,9 +31,9 @@ export default function RFPPage() {
     if (!input.trim() || isLoading) return
 
     const userMessage: Message = {
+      id: crypto.randomUUID(),
       role: 'user',
       content: input,
-      timestamp: new Date().toISOString()
     }
 
     setMessages(prev => [...prev, userMessage])
@@ -77,18 +68,18 @@ export default function RFPPage() {
       const data = await response.json()
       
       const assistantMessage: Message = {
+        id: crypto.randomUUID(),
         role: 'assistant',
         content: data.response,
-        timestamp: new Date().toISOString()
       }
 
       setMessages(prev => [...prev, assistantMessage])
     } catch (error) {
       console.error('Error:', error)
       const errorMessage: Message = {
+        id: crypto.randomUUID(),
         role: 'assistant',
         content: 'Sorry, I encountered an error while processing your request. Please try again.',
-        timestamp: new Date().toISOString()
       }
       setMessages(prev => [...prev, errorMessage])
     } finally {
@@ -97,8 +88,8 @@ export default function RFPPage() {
     }
   }
 
-  const handleSuggestionClick = (suggestion: string) => {
-    setInput(suggestion)
+  const handlePrompt = (prompt: string) => {
+    setInput(prompt)
   }
 
   return (
@@ -132,15 +123,12 @@ export default function RFPPage() {
                   I can help you with comprehensive information about Elastic Path products and services, 
                   including technical specifications, implementation details, pricing, and more for your Request for Proposal.
                 </p>
-                <PromptSuggestions 
-                  suggestions={RFP_PROMPT_SUGGESTIONS}
-                  onSuggestionClick={handleSuggestionClick}
-                />
+                <PromptSuggestions onPromptClick={handlePrompt} />
               </div>
             )}
             
-            {messages.map((message, index) => (
-              <div key={index} className="whitespace-pre-wrap">
+            {messages.map((message) => (
+              <div key={message.id} className="whitespace-pre-wrap">
                 {message.role === 'user' ? (
                   <div className="flex flex-row-reverse gap-3 mb-4">
                     <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0 dark:bg-gray-600">
@@ -175,7 +163,7 @@ export default function RFPPage() {
             )}
             
             {showTimeoutWarning && (
-              <TimeoutWarning />
+              <TimeoutWarning isVisible={showTimeoutWarning} />
             )}
             
             <div ref={messagesEndRef} />
