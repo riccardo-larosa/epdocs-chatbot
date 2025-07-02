@@ -108,7 +108,7 @@ export async function findRelevantContent(question: string, mode?: string) {
                     allResults.push(...websiteResults);
                     console.log(`🌐 Found ${websiteResults.length} website documents`);
                 }
-            } catch (error) {
+            } catch (_error) {
                 console.log(`ℹ️  Website collection not available or empty`);
             }
         }
