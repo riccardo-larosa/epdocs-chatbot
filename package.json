@@ -16,12 +16,19 @@
     "update-epcc-docs": "COLLECTION_OVERRIDE=epcc npx tsx scripts/updateDatabase.ts",
     "update-epsm-docs": "COLLECTION_OVERRIDE=epsm npx tsx scripts/updateDatabase.ts",
     "update-rfp": "COLLECTION_OVERRIDE=rfp npx tsx scripts/updateDatabase.ts",
+    "scrape-websites": "npx tsx scripts/scrape-to-website-collection.ts",
+    "scrape-website-stats": "npx tsx scripts/scrape-to-website-collection.ts -- --stats",
+    "scrape-website-clear": "npx tsx scripts/scrape-to-website-collection.ts -- --clear",
+    "discover-urls": "npx tsx scripts/crawl-elasticpath.ts",
+    "crawl-github": "npx tsx scripts/crawl-github-repo.ts",
     "add-file": "npx tsx scripts/addSingleFile.ts",
     "setup-rfp-vector": "npx tsx scripts/setup-rfp-vector-search.ts",
     "db:test": "npx tsx scripts/testConnection.ts",
     "check-env": "npx tsx scripts/checkEnv.ts",
     "setup-vector-search": "npx tsx scripts/setup-vector-search.ts",
-    "configure-web-scraping": "npx tsx scripts/configure-web-scraping.ts"
+    "configure-web-scraping": "npx tsx scripts/configure-web-scraping.ts",
+    "test-synonyms": "npx tsx scripts/test-synonyms.ts",
+    "scrape-comprehensive": "npx tsx scripts/scrape-comprehensive-github.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^0.0.72",
@@ -34,6 +41,7 @@
     "ai": "^4.1.17",
     "dd-trace": "^5.35.0",
     "dotenv": "^16.4.7",
+    "esbuild": "^0.25.5",
     "highlight.js": "^11.11.1",
     "langchain": "^0.3.15",
     "langsmith": "^0.2.15",
