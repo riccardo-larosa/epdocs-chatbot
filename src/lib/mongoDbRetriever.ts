@@ -108,8 +108,8 @@ export async function findRelevantContent(question: string, mode?: string) {
                     allResults.push(...websiteResults);
                     console.log(`🌐 Found ${websiteResults.length} website documents`);
                 }
-            } catch (_error) {
-                console.log(`ℹ️  Website collection not available or empty`);
+            } catch (error) {
+                console.log(`ℹ️  Website collection not available or empty:`, error instanceof Error ? error.message : 'Unknown error');
             }
         }
         
