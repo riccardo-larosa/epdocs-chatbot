@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Message, useChat } from 'ai/react'
-import FormatResponse from '@/components/FormatResponse'
+import CopyableResponse from '@/components/CopyableResponse'
 import PromptSuggestions from '@/components/PromptSuggestions'
 import LoadingBubbles from '@/components/LoadingBubbles'
 import { TimeoutWarning, TimeoutError } from '@/components/TimeoutWarning'
@@ -160,7 +160,7 @@ export default function RFPPage() {
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                       </svg>
                     </div>
-                    <FormatResponse content={message.content} />
+                    <CopyableResponse content={message.content} />
                   </div>
                 )}
               </div>

@@ -1,6 +1,6 @@
 import { streamText, tool } from 'ai';
 import { openai } from '@ai-sdk/openai';
-import { findRelevantContent, findTechnicalContent } from '@/lib/mongoDbRetriever';
+import { findRelevantContent, findTechnicalContent, findWebsiteContent } from '@/lib/mongoDbRetriever';
 import { scrapeWebPage, isWebScrapingEnabled, getAvailableScrapingTargets } from '@/lib/webScraper';
 // import { execGetRequest } from '@/lib/execRequests';
 import { z } from 'zod';
@@ -278,31 +278,50 @@ Context: ${context}
             maxSteps: 3,
             tools: {
                 getContent: tool({
-                    description: mode === 'rfp' ? 'get RFP-focused content from Elastic Path knowledge base, STRONGLY prioritizing RFP collection content over documentation and web content. Focus on pricing, implementation, security, and customer success information from RFP responses.' : 'get content from Elastic Path knowledge base',
+                    description: mode === 'rfp' ? 
+                        'Search Elastic Path knowledge base with RFP priority: 1) RFP-specific content, 2) Documentation, 3) Guides. STRONGLY prioritizes RFP collection content over general documentation. Focus on pricing, implementation, security, customer success, and competitive advantages from RFP responses.' : 
+                        'Search Elastic Path knowledge base for documentation and guides. Does NOT include website content - only curated documentation.',
                     parameters: z.object({
                         latestMessage: z.string().describe('the users question'),
                     }),
                     execute: async ({ latestMessage }) => findRelevantContent(latestMessage, mode),
                 }),
                 getTechnicalContent: tool({
-                    description: mode === 'rfp' ? 'get technical content for RFP responses, including API reference, architecture details, and integration capabilities' : 'get technical content, like API reference and code from Elastic Path API reference',
+                    description: mode === 'rfp' ? 
+                        'Search technical API documentation for RFP responses. Includes API reference, architecture details, integration capabilities, and technical specifications.' : 
+                        'Search technical API documentation including API reference, code examples, and integration guides.',
                     parameters: z.object({
                         latestMessage: z.string().describe('the users question'),
                     }),
-                    execute: async ({ latestMessage }) => findTechnicalContent(latestMessage),
+                    execute: async ({ latestMessage }) => findTechnicalContent(latestMessage, mode),
                 }),
-                scrapeWebPage: tool({
-                    description: isWebScrapingEnabled() ? (mode === 'rfp' ? 'scrape content from a whitelisted web page ONLY as a last resort when RFP content and documentation are insufficient. RFP responses should prioritize curated RFP content over web-scraped content.' : 'scrape content from a whitelisted web page. Only URLs that have been specifically allowed can be scraped for security reasons.') : 'web scraping is not enabled. No external URLs can be scraped.',
-                    parameters: z.object({
-                        url: z.string().describe('the URL to scrape (must be in the allowed whitelist)'),
+                ...(mode === 'rfp' ? {
+                    getWebsiteContent: tool({
+                        description: 'Search the dedicated website collection for scraped content. This collection contains pre-scraped website content that supplements RFP responses. Only available in RFP mode.',
+                        parameters: z.object({
+                            latestMessage: z.string().describe('the users question'),
+                        }),
+                        execute: async ({ latestMessage }) => {
+                            console.log(`🌐 RFP Mode: Searching website collection for: ${latestMessage}`);
+                            return await findWebsiteContent(latestMessage, 3);
+                        },
                     }),
-                    execute: async ({ url }) => {
-                        if (!isWebScrapingEnabled()) {
-                            throw new Error('Web scraping is not enabled. No external URLs can be scraped.');
-                        }
-                        return await scrapeWebPage(url);
-                    },
-                }),
+                    scrapeWebPage: tool({
+                        description: isWebScrapingEnabled() ? 
+                            'LAST RESORT: Scrape content from whitelisted websites ONLY when RFP content, documentation, and website collection are insufficient. All scraped content will be clearly marked with source attribution.' : 
+                            'Web scraping is not enabled.',
+                        parameters: z.object({
+                            url: z.string().describe('the URL to scrape (must be in the allowed whitelist)'),
+                        }),
+                        execute: async ({ url }) => {
+                            if (!isWebScrapingEnabled()) {
+                                throw new Error('Web scraping is not enabled. Only curated RFP and documentation content is available.');
+                            }
+                            console.log(`🌐 RFP Mode: Using web scraping as last resort for: ${url}`);
+                            return await scrapeWebPage(url);
+                        },
+                    })
+                } : {}),
                 // execGetRequest: tool({
                 //     description: 'execute a GET request to the specified endpoint',
                 //     parameters: z.object({

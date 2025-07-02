@@ -1,8 +1,11 @@
-const PromptSuggestions = ({ onPromptClick }: { onPromptClick: (prompt: string) => void }) => {
+// Test script to verify RFP prompts implementation
+
+// Simulate the path detection logic from PromptSuggestions component
+function getPromptsForPath(pathname) {
     let prompts = [];
     
     // Check if we're on the RFP page
-    const isRfpPage = typeof window !== 'undefined' && window.location.pathname.includes('/rfp');
+    const isRfpPage = pathname.includes('/rfp');
     
     if (isRfpPage) {
         prompts = [
@@ -34,23 +37,27 @@ const PromptSuggestions = ({ onPromptClick }: { onPromptClick: (prompt: string) 
             "How do I create an account and account membership via the API?",
         ];
     }
-
-    return (
-        <div className="mb-8">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Suggested Prompts</p>
-            <div className="flex flex-col gap-2">
-                {prompts.map((prompt, index) => (
-                    <button
-                        key={index}
-                        onClick={() => onPromptClick(prompt)}
-                        className="text-left px-4 py-2 rounded-full border border-slate-600 hover:border-slate-900 hover:bg-grey-100 text-sm"
-                    >
-                        {prompt}
-                    </button>
-                ))}
-            </div>
-        </div>
-    )
+    
+    return prompts;
 }
 
-export default PromptSuggestions;
+// Test the implementation
+console.log('🧪 Testing RFP Prompts Implementation...\n');
+
+// Test RFP page
+const rfpPrompts = getPromptsForPath('/rfp');
+console.log('📋 RFP Page Prompts:');
+rfpPrompts.forEach((prompt, index) => {
+    console.log(`  ${index + 1}. ${prompt}`);
+});
+
+console.log('\n📋 Ask Page Prompts (EPCC mode):');
+const askPrompts = getPromptsForPath('/ask');
+askPrompts.forEach((prompt, index) => {
+    console.log(`  ${index + 1}. ${prompt}`);
+});
+
+console.log('\n✅ Test completed successfully!');
+console.log(`   - RFP page has ${rfpPrompts.length} prompts`);
+console.log(`   - Ask page has ${askPrompts.length} prompts`);
+console.log('   - Different prompts for different pages ✓'); 

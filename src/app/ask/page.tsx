@@ -7,7 +7,7 @@ import PromptSuggestions from '@/components/PromptSuggestions';
 import EpIcon from '@/components/icons/EpIcon';
 // import LoadingBubbles from '../components/LoadingBubbles';
 import React from 'react';
-import FormatResponse from '@/components/FormatResponse';
+import CopyableResponse from '@/components/CopyableResponse';
 import { TimeoutWarning, TimeoutError } from '@/components/TimeoutWarning';
 
 export default function Ask() {
@@ -189,7 +189,7 @@ export default function Ask() {
                           <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center flex-shrink-0 dark:bg-gray-700">
                             <EpIcon className="w-8 h-8 text-emerald-500 dark:text-emerald-400" />
                           </div>
-                          <FormatResponse content={m.content} />
+                          <CopyableResponse content={m.content} />
                         </div>
                       </>
                     )}
