@@ -479,3 +479,4 @@ For issues and questions:
 ## License
 
 This project is proprietary to Elastic Path.
+No reuse allowed
