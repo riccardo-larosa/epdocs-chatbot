@@ -13,6 +13,8 @@ import ThemeToggle from '@/components/ThemeToggle'
 export default function RFPPage() {
   const [showTimeoutWarning, setShowTimeoutWarning] = useState(false)
   const timeoutWarningRef = useRef<NodeJS.Timeout | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const formRef = useRef<HTMLFormElement>(null)
 
   const { messages, input, handleInputChange, handleSubmit, error, append, isLoading } = useChat(
     { 
@@ -65,6 +67,27 @@ export default function RFPPage() {
       }
     };
   }, []);
+
+  // Auto-resize textarea based on content
+  const MAX_HEIGHT = 200; // Maximum height in pixels
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      // Reset height to auto to get the correct scrollHeight
+      textarea.style.height = 'auto';
+      // Set height to scrollHeight, capped at MAX_HEIGHT
+      const newHeight = Math.min(textarea.scrollHeight, MAX_HEIGHT);
+      textarea.style.height = `${newHeight}px`;
+    }
+  }, [input]);
+
+  // Handle Enter key for submit, Shift+Enter for new line
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      formRef.current?.requestSubmit();
+    }
+  };
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -189,19 +212,21 @@ export default function RFPPage() {
 
           {/* Input Form */}
           <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-            <form onSubmit={handleFormSubmit} className="flex space-x-4">
-              <input
-                type="text"
+            <form ref={formRef} onSubmit={handleFormSubmit} className="flex space-x-4">
+              <textarea
+                ref={textareaRef}
                 value={input}
                 onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
                 placeholder="Ask about Elastic Path products, pricing, implementation, or any RFP-related questions..."
-                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white resize-none overflow-y-auto min-h-[42px] max-h-[200px]"
                 disabled={isLoading}
+                rows={1}
               />
               <button
                 type="submit"
                 disabled={isLoading || !input.trim()}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed self-end"
               >
                 Send
               </button>
