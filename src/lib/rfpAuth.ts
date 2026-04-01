@@ -1,4 +1,6 @@
-import { SignJWT, jwtVerify, type JWTPayload } from 'jose'
+import { SignJWT } from 'jose/jwt/sign'
+import { jwtVerify } from 'jose/jwt/verify'
+import type { JWTPayload } from 'jose'
 
 export const RFP_COOKIE_NAME = 'rfp_session'
 export const SESSION_MAX_AGE = 60 * 60 * 24 // 24 hours in seconds

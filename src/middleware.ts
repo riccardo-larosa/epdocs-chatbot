@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { jwtVerify } from 'jose'
-import { RFP_COOKIE_NAME, type RfpTokenPayload } from '@/lib/rfpAuth'
+import { jwtVerify } from 'jose/jwt/verify'
+import type { RfpTokenPayload } from '@/lib/rfpAuth'
+
+const RFP_COOKIE_NAME = 'rfp_session'
 
 const PUBLIC_PATHS = ['/rfp/login']
 const ADMIN_PATHS = ['/rfp/admin']

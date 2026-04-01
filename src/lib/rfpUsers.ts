@@ -64,8 +64,8 @@ export async function deleteUser(username: string): Promise<boolean> {
 
 export async function listUsers(): Promise<PublicRfpUser[]> {
   const col = await getCollection()
-  const users = await col.find({}, { projection: { passwordHash: 0 } }).toArray()
-  return users.map(({ _id: _ignored, ...u }) => u) as PublicRfpUser[]
+  const users = await col.find({}, { projection: { passwordHash: 0, _id: 0 } }).toArray()
+  return users as unknown as PublicRfpUser[]
 }
 
 export async function hasAnyAdmin(): Promise<boolean> {
