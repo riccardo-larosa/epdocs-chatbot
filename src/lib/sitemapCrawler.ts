@@ -12,7 +12,7 @@ import {
   insertCrawlResults,
   type CrawlRoute,
   type CrawlExclusion,
-  type CrawlResult,
+
 } from './crawlConfig'
 
 interface SitemapEntry {
@@ -130,7 +130,6 @@ export function routeUrls(
   entries: SitemapEntry[],
   routes: CrawlRoute[],
   exclusions: CrawlExclusion[],
-  baseUrl: string
 ): { routed: RoutedUrl[]; skipped: SkippedUrl[] } {
   const routed: RoutedUrl[] = []
   const skipped: SkippedUrl[] = []
@@ -213,7 +212,7 @@ export async function runCrawlJob(
       ])
 
       const baseUrl = process.env.DOCS_BASE_URL || ''
-      const { routed, skipped } = routeUrls(entries, routes, exclusions, baseUrl)
+      const { routed, skipped } = routeUrls(entries, routes, exclusions)
 
       await updateCrawlJob(jobId, {
         totalUrls: routed.length + skipped.length,
