@@ -3,6 +3,7 @@ import { MongoDBAtlasVectorSearch } from '@langchain/mongodb';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { MongoClient } from 'mongodb';
 import { expandQueryWithSynonyms } from './synonymMappings';
+import { getHiddenSourceUrls } from './crawlConfig';
 
 export class MongoDBRetriever {
     private vectorStore!: MongoDBAtlasVectorSearch;
@@ -151,10 +152,28 @@ export async function findRelevantContent(question: string, mode?: string) {
         console.log(`📚 Found ${filteredResults.length} non-website documents`);
     }
     
+    // Strip source links for hidden sources
+    try {
+        const hiddenUrls = await getHiddenSourceUrls();
+        if (hiddenUrls.size > 0) {
+            for (const doc of allResults) {
+                const url = doc.metadata?.url || '';
+                const source = doc.metadata?.source || '';
+                if (hiddenUrls.has(url) || hiddenUrls.has(source)) {
+                    delete doc.metadata.url;
+                    delete doc.metadata.source;
+                    doc.metadata.sourceHidden = true;
+                }
+            }
+        }
+    } catch (err) {
+        console.log('Could not check hidden sources:', err instanceof Error ? err.message : err);
+    }
+
     // Log sources with collection information
     const docs = allResults.map(doc => {
         const collection = doc.metadata?.sourceCollection || 'Unknown';
-        const source = doc.metadata?.source || 'Unknown source';
+        const source = doc.metadata?.sourceHidden ? '[hidden]' : (doc.metadata?.source || 'Unknown source');
         return `[${collection}] ${source}`;
     }).join('\n');
     

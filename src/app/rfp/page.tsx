@@ -270,7 +270,7 @@ export default function RFPPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowChangePassword(true)}
-              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               Change password
             </button>

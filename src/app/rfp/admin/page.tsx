@@ -38,7 +38,7 @@ export default function RFPAdminPage() {
     try {
       const res = await fetch('/api/admin/rfp/users')
       if (res.status === 403) {
-        router.push('/rfp')
+        router.push('/rfp/login?next=/rfp/admin')
         return
       }
       const data = await res.json()
