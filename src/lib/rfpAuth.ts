@@ -35,7 +35,7 @@ export function sessionCookieOptions(maxAge: number = SESSION_MAX_AGE) {
   return {
     httpOnly: true,
     sameSite: 'strict' as const,
-    path: '/rfp',
+    path: '/',
     maxAge,
     secure: process.env.NODE_ENV === 'production',
   }

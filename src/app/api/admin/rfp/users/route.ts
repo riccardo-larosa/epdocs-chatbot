@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/rfpAuth'
-import { listUsers, createUser, deleteUser } from '@/lib/rfpUsers'
+import { listUsers, createUser, deleteUser, updatePassword } from '@/lib/rfpUsers'
 
 async function requireAdmin(): Promise<boolean> {
   const cookieStore = await cookies()
@@ -51,6 +51,29 @@ export async function POST(request: Request) {
     const isConflict = message.includes('already exists')
     console.error('[admin/rfp/users POST]', err)
     return NextResponse.json({ error: message }, { status: isConflict ? 409 : 500 })
+  }
+}
+
+export async function PATCH(request: Request) {
+  if (!(await requireAdmin())) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+  try {
+    const body = await request.json()
+    const { username, newPassword } = body ?? {}
+
+    if (!username || !newPassword) {
+      return NextResponse.json({ error: 'username and newPassword are required' }, { status: 400 })
+    }
+
+    const updated = await updatePassword(username, newPassword)
+    if (!updated) {
+      return NextResponse.json({ error: `User "${username}" not found` }, { status: 404 })
+    }
+    return NextResponse.json({ ok: true, message: `Password updated for "${username}"` })
+  } catch (err) {
+    console.error('[admin/rfp/users PATCH]', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 

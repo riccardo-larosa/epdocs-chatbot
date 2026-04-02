@@ -62,6 +62,13 @@ export async function deleteUser(username: string): Promise<boolean> {
   return result.deletedCount > 0
 }
 
+export async function updatePassword(username: string, newPassword: string): Promise<boolean> {
+  const col = await getCollection()
+  const passwordHash = await bcrypt.hash(newPassword, 12)
+  const result = await col.updateOne({ username }, { $set: { passwordHash } })
+  return result.matchedCount > 0
+}
+
 export async function listUsers(): Promise<PublicRfpUser[]> {
   const col = await getCollection()
   const users = await col.find({}, { projection: { passwordHash: 0, _id: 0 } }).toArray()

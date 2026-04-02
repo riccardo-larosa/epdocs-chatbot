@@ -6,7 +6,7 @@ export async function POST() {
   response.cookies.set(RFP_COOKIE_NAME, '', {
     httpOnly: true,
     sameSite: 'strict',
-    path: '/rfp',
+    path: '/',
     maxAge: 0,
   })
   return response

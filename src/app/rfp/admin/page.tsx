@@ -1,9 +1,17 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
 import ThemeToggle from '@/components/ThemeToggle'
 import type { PublicRfpUser } from '@/lib/rfpUsers'
+
+interface ResetPasswordState {
+  username: string
+  newPassword: string
+  loading: boolean
+  error: string
+  success: boolean
+}
 
 export default function RFPAdminPage() {
   const router = useRouter()
@@ -20,6 +28,9 @@ export default function RFPAdminPage() {
 
   // Delete state
   const [deletingUser, setDeletingUser] = useState<string | null>(null)
+
+  // Inline reset-password state keyed by username (null = collapsed)
+  const [resetStates, setResetStates] = useState<Record<string, ResetPasswordState>>({})
 
   const fetchUsers = useCallback(async () => {
     setLoadingUsers(true)
@@ -88,6 +99,51 @@ export default function RFPAdminPage() {
       setError('An unexpected error occurred')
     } finally {
       setDeletingUser(null)
+    }
+  }
+
+  const toggleResetRow = (username: string) => {
+    setResetStates((prev) => {
+      if (prev[username]) {
+        const next = { ...prev }
+        delete next[username]
+        return next
+      }
+      return {
+        ...prev,
+        [username]: { username, newPassword: '', loading: false, error: '', success: false },
+      }
+    })
+  }
+
+  const handleResetPassword = async (username: string) => {
+    const state = resetStates[username]
+    if (!state) return
+    setResetStates((prev) => ({ ...prev, [username]: { ...prev[username], loading: true, error: '', success: false } }))
+    try {
+      const res = await fetch('/api/admin/rfp/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, newPassword: state.newPassword }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setResetStates((prev) => ({
+          ...prev,
+          [username]: { ...prev[username], loading: false, success: true, newPassword: '' },
+        }))
+        setTimeout(() => toggleResetRow(username), 1500)
+      } else {
+        setResetStates((prev) => ({
+          ...prev,
+          [username]: { ...prev[username], loading: false, error: data.error ?? 'Failed to reset password' },
+        }))
+      }
+    } catch {
+      setResetStates((prev) => ({
+        ...prev,
+        [username]: { ...prev[username], loading: false, error: 'An unexpected error occurred' },
+      }))
     }
   }
 
@@ -204,66 +260,106 @@ export default function RFPAdminPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-2 pr-4 font-medium text-gray-700 dark:text-gray-300">
-                      Username
-                    </th>
-                    <th className="text-left py-2 pr-4 font-medium text-gray-700 dark:text-gray-300">
-                      Role
-                    </th>
-                    <th className="text-left py-2 pr-4 font-medium text-gray-700 dark:text-gray-300">
-                      Status
-                    </th>
-                    <th className="text-left py-2 pr-4 font-medium text-gray-700 dark:text-gray-300">
-                      Created
-                    </th>
+                    <th className="text-left py-2 pr-4 font-medium text-gray-700 dark:text-gray-300">Username</th>
+                    <th className="text-left py-2 pr-4 font-medium text-gray-700 dark:text-gray-300">Role</th>
+                    <th className="text-left py-2 pr-4 font-medium text-gray-700 dark:text-gray-300">Status</th>
+                    <th className="text-left py-2 pr-4 font-medium text-gray-700 dark:text-gray-300">Created</th>
                     <th className="py-2" />
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((u) => (
-                    <tr
-                      key={u.username}
-                      className="border-b border-gray-100 dark:border-gray-700/50 last:border-0"
-                    >
-                      <td className="py-3 pr-4 text-gray-900 dark:text-white font-medium">
-                        {u.username}
-                      </td>
-                      <td className="py-3 pr-4">
-                        <span
-                          className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                            u.role === 'admin'
-                              ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
-                              : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
-                          }`}
+                  {users.map((u) => {
+                    const reset = resetStates[u.username]
+                    return (
+                      <Fragment key={u.username}>
+                        <tr
+                          className="border-b border-gray-100 dark:border-gray-700/50"
                         >
-                          {u.role}
-                        </span>
-                      </td>
-                      <td className="py-3 pr-4">
-                        <span
-                          className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                            u.active
-                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                              : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300'
-                          }`}
-                        >
-                          {u.active ? 'active' : 'inactive'}
-                        </span>
-                      </td>
-                      <td className="py-3 pr-4 text-gray-500 dark:text-gray-400">
-                        {new Date(u.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="py-3 text-right">
-                        <button
-                          onClick={() => handleDeleteUser(u.username)}
-                          disabled={deletingUser === u.username}
-                          className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm disabled:opacity-50"
-                        >
-                          {deletingUser === u.username ? 'Deleting…' : 'Delete'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                          <td className="py-3 pr-4 text-gray-900 dark:text-white font-medium">
+                            {u.username}
+                          </td>
+                          <td className="py-3 pr-4">
+                            <span
+                              className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+                                u.role === 'admin'
+                                  ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
+                                  : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                              }`}
+                            >
+                              {u.role}
+                            </span>
+                          </td>
+                          <td className="py-3 pr-4">
+                            <span
+                              className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+                                u.active
+                                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                                  : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300'
+                              }`}
+                            >
+                              {u.active ? 'active' : 'inactive'}
+                            </span>
+                          </td>
+                          <td className="py-3 pr-4 text-gray-500 dark:text-gray-400">
+                            {new Date(u.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="py-3 text-right whitespace-nowrap">
+                            <button
+                              onClick={() => toggleResetRow(u.username)}
+                              className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm mr-3"
+                            >
+                              {reset ? 'Cancel' : 'Reset password'}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteUser(u.username)}
+                              disabled={deletingUser === u.username}
+                              className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm disabled:opacity-50"
+                            >
+                              {deletingUser === u.username ? 'Deleting…' : 'Delete'}
+                            </button>
+                          </td>
+                        </tr>
+
+                        {reset && (
+                          <tr key={`${u.username}-reset`} className="border-b border-gray-100 dark:border-gray-700/50 bg-gray-50 dark:bg-gray-700/30">
+                            <td colSpan={5} className="px-2 py-3">
+                              <div className="flex flex-wrap items-center gap-3">
+                                <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                                  New password for <strong>{u.username}</strong>:
+                                </span>
+                                <input
+                                  type="password"
+                                  value={reset.newPassword}
+                                  onChange={(e) =>
+                                    setResetStates((prev) => ({
+                                      ...prev,
+                                      [u.username]: { ...prev[u.username], newPassword: e.target.value, error: '', success: false },
+                                    }))
+                                  }
+                                  placeholder="New password"
+                                  disabled={reset.loading}
+                                  className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm w-48 disabled:opacity-50"
+                                />
+                                <button
+                                  onClick={() => handleResetPassword(u.username)}
+                                  disabled={reset.loading || !reset.newPassword.trim()}
+                                  className="px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  {reset.loading ? 'Saving…' : reset.success ? 'Saved!' : 'Save'}
+                                </button>
+                                {reset.error && (
+                                  <span className="text-sm text-red-600 dark:text-red-400">{reset.error}</span>
+                                )}
+                                {reset.success && (
+                                  <span className="text-sm text-emerald-600 dark:text-emerald-400">Password updated.</span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
