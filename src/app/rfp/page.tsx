@@ -8,10 +8,135 @@ import LoadingBubbles from '@/components/LoadingBubbles'
 import { TimeoutWarning, TimeoutError } from '@/components/TimeoutWarning'
 import ThemeToggle from '@/components/ThemeToggle'
 
+function ChangePasswordModal({ onClose }: { onClose: () => void }) {
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    if (newPassword !== confirmPassword) {
+      setError('New passwords do not match')
+      return
+    }
+    setLoading(true)
+    try {
+      const res = await fetch('/api/auth/rfp/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setSuccess(true)
+        setTimeout(onClose, 1500)
+      } else {
+        setError(data.error ?? 'Failed to change password')
+      }
+    } catch {
+      setError('An unexpected error occurred')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+      <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex justify-between items-center mb-5">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Change password</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none"
+          >
+            ×
+          </button>
+        </div>
+
+        {success ? (
+          <p className="text-emerald-600 dark:text-emerald-400 text-sm font-medium">
+            Password changed successfully.
+          </p>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Current password
+              </label>
+              <input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+                disabled={loading}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm disabled:opacity-50"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                New password
+              </label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                disabled={loading}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm disabled:opacity-50"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Confirm new password
+              </label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                disabled={loading}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm disabled:opacity-50"
+              />
+            </div>
+
+            {error && (
+              <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg">
+                {error}
+              </p>
+            )}
+
+            <div className="flex justify-end gap-3 pt-1">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading || !currentPassword || !newPassword || !confirmPassword}
+                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              >
+                {loading ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
 
 
 export default function RFPPage() {
   const [showTimeoutWarning, setShowTimeoutWarning] = useState(false)
+  const [showChangePassword, setShowChangePassword] = useState(false)
   const timeoutWarningRef = useRef<NodeJS.Timeout | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
@@ -130,6 +255,7 @@ export default function RFPPage() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
+      {showChangePassword && <ChangePasswordModal onClose={() => setShowChangePassword(false)} />}
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
@@ -141,7 +267,15 @@ export default function RFPPage() {
               Get comprehensive information for your Request for Proposal
             </p>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowChangePassword(true)}
+              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+            >
+              Change password
+            </button>
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 

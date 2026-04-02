@@ -1,8 +1,13 @@
+'use client'
+
+import { usePathname } from 'next/navigation'
+
 const PromptSuggestions = ({ onPromptClick }: { onPromptClick: (prompt: string) => void }) => {
+    const pathname = usePathname()
     let prompts = [];
     
     // Check if we're on the RFP page
-    const isRfpPage = typeof window !== 'undefined' && window.location.pathname.includes('/rfp');
+    const isRfpPage = pathname?.includes('/rfp');
     
     if (isRfpPage) {
         prompts = [
