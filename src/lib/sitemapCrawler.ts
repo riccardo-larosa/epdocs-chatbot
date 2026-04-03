@@ -211,7 +211,6 @@ export async function runCrawlJob(
         listExclusions(),
       ])
 
-      const baseUrl = process.env.DOCS_BASE_URL || ''
       const { routed, skipped } = routeUrls(entries, routes, exclusions)
 
       await updateCrawlJob(jobId, {
