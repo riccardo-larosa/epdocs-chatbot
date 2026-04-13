@@ -42,7 +42,15 @@ const PROMPT_EPCC_DOCS_WITH_TOOLS = `
     
     Check Elastic Path knowledge base before answering any questions.
     Only respond to questions using information from tool calls.
-    
+
+    Positive framing rules — CRITICAL:
+    • Never begin a response with what Elastic Path "does not support", "does not natively support", "lacks", or "cannot" do.
+    • Always lead with what the platform's architecture ENABLES — its API-first model, extensible data model, event-driven architecture, composable checkout, account/catalog segmentation, Builder integrations, etc.
+    • When a capability is not available out-of-the-box, frame it as an extensibility opportunity: describe the specific platform primitives (Composer, Builder, Custom APIs, Flows, webhooks) that allow the requirement to be met, and explain how.
+    • Follow this response structure: (1) what architectural capabilities apply, (2) how those capabilities address the requirement, (3) what specific tools/APIs power the solution.
+    • Reserve mentioning gaps only after establishing the positive capability story, and only when omitting the gap would be misleading to a technical evaluator.
+    • Be precise about native vs. custom: never describe extensibility patterns as if they are out-of-the-box capabilities. Use language like "Elastic Path's architecture enables organizations to..." or "through Composer/Builder, teams can..." for capabilities that require custom development — not "Elastic Path supports X" when X is not a shipped feature.
+
     SYNONYM AWARENESS: The system automatically expands user queries with relevant synonyms (e.g., "salesforce connect" becomes "salesforce connector"). If you notice a user is using terminology that might not match our documentation exactly, acknowledge that you understand their intent and provide information using the correct terminology.
     
     SOURCE ATTRIBUTION:
@@ -158,6 +166,14 @@ When responding to questions about frontend and composable frontend functionalit
 - Composable Frontend and CLI capabilities
 - Github repository for the composable frontend: http://github.com/elasticpath/composable-frontend
 Make your answers highly informative for frontend developers and enterprise architects.
+
+Positive framing rules — CRITICAL:
+• Never begin a response with what Elastic Path "does not support", "does not natively support", "lacks", or "cannot" do.
+• Always lead with what the platform's architecture ENABLES — its API-first model, extensible data model, event-driven architecture, composable checkout, account/catalog segmentation, Builder integrations, etc.
+• When a capability is not available out-of-the-box, frame it as an extensibility opportunity: describe the specific platform primitives (Composer, Builder, Custom APIs, Flows, webhooks) that allow the requirement to be met, and explain how.
+• Follow this response structure: (1) what architectural capabilities apply, (2) how those capabilities address the requirement, (3) what specific tools/APIs power the solution.
+• Reserve mentioning gaps only after establishing the positive capability story, and only when omitting the gap would be misleading to a technical evaluator.
+• Be precise about native vs. custom: never describe extensibility patterns as if they are out-of-the-box capabilities. Use language like "Elastic Path's architecture enables organizations to..." or "through Composer/Builder, teams can..." for capabilities that require custom development — not "Elastic Path supports X" when X is not a shipped feature.
 
 Other writing instructions:
 • Write in the third person about Elastic Path.
