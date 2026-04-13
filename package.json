@@ -28,7 +28,9 @@
     "setup-vector-search": "npx tsx scripts/setup-vector-search.ts",
     "configure-web-scraping": "npx tsx scripts/configure-web-scraping.ts",
     "test-synonyms": "npx tsx scripts/test-synonyms.ts",
-    "scrape-comprehensive": "npx tsx scripts/scrape-comprehensive-github.ts"
+    "scrape-comprehensive": "npx tsx scripts/scrape-comprehensive-github.ts",
+    "crawl:trigger": "npx tsx -e \"require('./src/lib/sitemapCrawler').runCrawlJob(process.env.DOCS_SITEMAP_URL || 'https://elasticpath.dev/sitemap.xml', 'cli').then(id => console.log('Job started:', id))\"",
+    "crawl:status": "npx tsx -e \"require('./src/lib/crawlConfig').listCrawlJobs(5).then(j => console.log(JSON.stringify(j, null, 2)))\""
   },
   "dependencies": {
     "@ai-sdk/openai": "^0.0.72",
@@ -44,6 +46,7 @@
     "dd-trace": "^5.35.0",
     "dotenv": "^16.4.7",
     "esbuild": "^0.25.5",
+    "fast-xml-parser": "^5.5.9",
     "highlight.js": "^11.11.1",
     "jose": "^6.2.2",
     "langchain": "^0.3.15",

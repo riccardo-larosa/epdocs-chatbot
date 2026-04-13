@@ -4,8 +4,8 @@ import type { RfpTokenPayload } from '@/lib/rfpAuth'
 
 const RFP_COOKIE_NAME = 'rfp_session'
 
-const PUBLIC_PATHS = ['/rfp/login']
-const ADMIN_PATHS = ['/rfp/admin']
+const PUBLIC_PATHS = ['/rfp/login', '/admin/login']
+const ADMIN_PATHS = ['/rfp/admin', '/admin']
 
 function getSecret(): Uint8Array {
   const secret = process.env.RFP_JWT_SECRET
@@ -33,10 +33,11 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Not authenticated — send to login
+  // Not authenticated — send to login, preserving intended destination
   if (!payload) {
     const loginUrl = request.nextUrl.clone()
     loginUrl.pathname = '/rfp/login'
+    loginUrl.searchParams.set('next', pathname)
     return NextResponse.redirect(loginUrl)
   }
 
@@ -44,6 +45,7 @@ export async function middleware(request: NextRequest) {
   if (ADMIN_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/')) && payload.role !== 'admin') {
     const rfpUrl = request.nextUrl.clone()
     rfpUrl.pathname = '/rfp'
+    rfpUrl.search = ''
     return NextResponse.redirect(rfpUrl)
   }
 
@@ -51,5 +53,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/rfp/:path*'],
+  matcher: ['/rfp/:path*', '/admin/:path*'],
 }

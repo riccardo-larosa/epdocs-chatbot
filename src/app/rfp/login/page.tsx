@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import ThemeToggle from '@/components/ThemeToggle'
 
-export default function RFPLoginPage() {
+function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const nextPath = searchParams.get('next') || '/rfp'
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -22,7 +24,7 @@ export default function RFPLoginPage() {
         body: JSON.stringify({ username, password }),
       })
       if (res.ok) {
-        router.push('/rfp')
+        router.push(nextPath)
         router.refresh()
       } else {
         const data = await res.json()
@@ -109,5 +111,13 @@ export default function RFPLoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function RFPLoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   )
 }
